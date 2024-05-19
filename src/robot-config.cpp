@@ -19,7 +19,7 @@ rotation leftTrack = rotation(PORT10, false);
 rotation middleTrack = rotation(PORT11, false);
 rotation rightTrack = rotation(PORT12, false);
 
-inertial Inertial = inertial(14);
+inertial Inertial = inertial(PORT14);
 
 /**
  * Used to initialize code/tasks/devices added using tools in VEXcode Pro.
