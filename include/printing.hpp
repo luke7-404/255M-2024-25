@@ -1,10 +1,12 @@
 // Add definition guards
+#pragma once
 #ifndef PRINTING_HPP_ // If the header file has not been defined
 #define PRINTING_HPP_ // Define the header file
 
+
     // Include dependencies
-    #include <iostream>
     #include "vex.h"
+    #include "SWWight/SWWight.h"
     
     #define LCD Brain.Screen // Abbreviates Brain.Screen to just LCD
     #define BLUE "#004aad" // Abbreviates the hex code for our background color to BLUE 
@@ -59,12 +61,14 @@
             /**
              * @brief Shows data analytics and file information
             */
-            void printGraph();
+            void printFile(data_collect &Data);
 
             static bool enableAuton; // A logic variable for telling when viewing the auton screen 
             static bool isDeconstructed; // When the class is destructed, the value will terminate the object's ability to print
 
             static motor MotorList[]; // A static motor list that contains the available motors to access
+
+            static bool enableFile;
 
         protected:
             
@@ -120,5 +124,8 @@
      * @return Returns an integer based on the selected Autonomous program 
     */
     extern uint8_t checkPressedAuton(LCD_Menu &Menu, int16_t pressed_X, int16_t pressed_Y);
+
+    extern void checkPressedFile(data_collect &Data, int16_t pressed_X, int16_t pressed_Y);
+
 
 #endif // End of definition 

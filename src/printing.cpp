@@ -1,5 +1,6 @@
 #include "printing.hpp" // Include header file
 
+
 using namespace std; // Using standard for iostream
 
 
@@ -7,8 +8,8 @@ using namespace std; // Using standard for iostream
 motor LCD_Menu::MotorList[] = {TestMotor1, TestMotor2, TestMotor3, TestMotor4, TestMotor5, TestMotor6, TestMotor7, TestMotor8};
 
 bool LCD_Menu::enableAuton = true; // Set auton Screen as default
+bool LCD_Menu::enableFile = false; // Set File Screen not as default
 bool LCD_Menu::isDeconstructed = false; // Set the object as not destroyed
-
 
 // Constructor
 LCD_Menu::LCD_Menu(){
@@ -46,6 +47,7 @@ const void LCD_Menu::screenClear(){
   LCD.clearScreen(); // Clear the screen
   LCD.drawRectangle(0, 26, 480, 214, BLUE); // Draws the background
   this->makeButtons(); // Draws the tabs
+  
 }
 
 // A constant function that translates a character into the bottom right corner
@@ -136,7 +138,7 @@ void LCD_Menu::printSystem(){
   /* Elements Need to Update */
 
   // Prints out battery information and if an SD_Card is inserted
-  LCD.printAt(23, 42, false, "Battery:%d Battery_Voltage:%.3f SD_Ins?:%d", Brain.Battery.capacity(), Brain.Battery.voltage(), Brain.SDcard.isInserted());
+  LCD.printAt(70, 42, false, "Battery:%d Battery_Voltage:%.3f", Brain.Battery.capacity(), Brain.Battery.voltage());
   
   // Calls the listMotors function
   this->listMotors(MotorList, sizeof(MotorList)/sizeof(MotorList[0]), 39, 83);
@@ -164,17 +166,20 @@ void LCD_Menu::printOdom(float x, float y, float rad, rotation Left, rotation Mi
   }
 }
 
+// construct panel/ rotational indicator
+panel turnPanel(80, 41, 48, 0, 360);
+
 // Prints out debugging information for PID
 void LCD_Menu::printPID(inertial inert = Inertial){
   this->screenClear(); // Clears screen
   
   LCD.setPenWidth(4); // Makes the width of shapes bolder
-  
-  /* Static Elements */
 
   // Rotational circle indicator
-  LCD.drawCircle(114, 89, 48, BLUE);
-  LCD.drawLine(115, 89, 115, 30);
+  turnPanel.set_panel_data(Control1.Axis1.value()+Control1.Axis2.value()); // add data too indicator
+  turnPanel.set_data_label_enable(false); // turn off indicator text
+  turnPanel.set_backgroud_color(000,000,000); //fix GUI colors
+  turnPanel.display(); // print the indicator
 
   // Lateral arrow indicator
   LCD.drawLine(396, 78, 430, 89); // Top line
@@ -186,7 +191,7 @@ void LCD_Menu::printPID(inertial inert = Inertial){
   /* Elements that need to be updated */
 
   // Prints the Rotational information
-  LCD.printAt(41, 163, false, "Heading(DEG): %.2f", 90.00);
+  LCD.printAt(41, 163, false, "Heading(DEG): %d", Control1.Axis1.value()+Control1.Axis2.value());
   LCD.printAt(66, 182, false, "T Error: %.2f", 90.00);
   LCD.printAt(66, 201, false, "T Integ: %.2f", 90.00);
   LCD.printAt(66, 221, false, "T Deriv: %.2f", 90.00);
@@ -198,14 +203,25 @@ void LCD_Menu::printPID(inertial inert = Inertial){
   LCD.printAt(295, 221, false, "Deriv: %.2f", 90.00);
 }
 
-// Shows data analytics and file information
-void LCD_Menu::printGraph(){
-  this->screenClear(); // Clears screen
-  
-  // Prints "graph" to the screen to indicate what screen is being shown
-  LCD.printAt(132, 200, "Graph");
+// construct graph indicator
+graph dataGraph(250, 203, 200, 170, PASS);
 
-  /* TODO: Find a library to make graphs */
+// Shows data analytics and file information
+void LCD_Menu::printFile(data_collect &Data){
+  this->screenClear(); // Clears screen
+
+  LCD.printAt(53, 82, false, "SDCard Ins?:%d", Brain.SDcard.isInserted());
+  LCD.printAt(44, 115, false, "File Created?:%d", Data.isNameCreated);
+  LCD.printAt(50, 148, false, "File Number:%d", Data.currentFileNum+Data.isNameCreated);
+
+  // Draw emphasized box and print text 
+  LCD.drawRectangle(23, 165, 202, 38);
+  LCD.printAt(43, 188, false, "Mark Active File");
+  
+  // add data for x-axis and y-axis
+  dataGraph.add_data(Brain.timer(sec), abs(Control1.Axis1.value()+Control1.Axis2.value()));
+  dataGraph.set_x_pass_space_per_frame(10); // x-interval spacing
+  dataGraph.draw_line(); // print the graph
 }
 
 
@@ -222,23 +238,24 @@ int checkPressedTab(LCD_Menu &Menu){
     if(pressed_X <= 96){
       Menu.printAuton(); // Prints the autonomous selection page
       Menu.enableAuton = true; // Toggles auton buttons functionality to on
+      Menu.enableFile = false; // Toggles file buttons functionality to off
 
     } else if (pressed_X > 96 && pressed_X <= 192){  
+      Menu.enableFile = false; // Toggles file buttons functionality to off
       Menu.enableAuton = false; // Toggles auton buttons functionality to off
       Menu.printSystem();// Prints the System information page
 
     }else if (pressed_X > 192 && pressed_X <= 288) {
       // Prints the Odometry information page
       Menu.printOdom(1, 2, 3, leftTrack, middleTrack, rightTrack);
+      Menu.enableFile = false; // Toggles file buttons functionality to off
       Menu.enableAuton = false; // Toggles auton buttons functionality to off
 
     } else if (pressed_X > 288 && pressed_X <= 384) {
       Menu.printPID(); // Prints the PID information page
+      Menu.enableFile = false; // Toggles file buttons functionality to off
       Menu.enableAuton = false; // Toggles auton buttons functionality to off
   
-    } else if (pressed_X > 384) {
-      Menu.printGraph(); // Prints File/ graph information page
-      Menu.enableAuton = false; // Toggles auton buttons functionality to off
     }
   }
   return 0;
@@ -288,4 +305,18 @@ uint8_t checkPressedAuton(LCD_Menu &Menu, int16_t pressed_X, int16_t pressed_Y){
 
   // If the function reaches here we return a 6 to symbolize that no button has been pressed
   return 6;
+}
+
+// Checks if a pressed x and y value is where the emphasized button is
+void checkPressedFile(data_collect &Data, int16_t pressed_X, int16_t pressed_Y){
+  
+  // check Y range
+  if(pressed_Y >= 165 && pressed_Y <= 203){
+
+    // check X range
+    if(pressed_X >= 23 && pressed_X <= 225 && !Data.emphasized){
+      Data.emphasizeFile(); // call the emphasized function
+    }
+
+  }
 }

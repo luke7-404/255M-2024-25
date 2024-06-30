@@ -1,7 +1,7 @@
 #include "vex.h" //Includes all the vex library
 
 // Include my libraries
-#include "printing.hpp" 
+#include "printing.hpp"
 
 using namespace vex;
 
@@ -10,6 +10,8 @@ competition Competition;
 
 // Create a global Menu Object
 LCD_Menu Menu;
+data_collect Data(Brain.SDcard.isInserted());
+
 
 // A unsigned integer that represents the selected autonomous program
 uint8_t autoNum;
@@ -22,7 +24,11 @@ int MenuHandler(){
   while(MenuON){
     // If less than or equal to 26, we are finding the TAB buttons 
     if (Brain.Screen.yPosition() <= 26){
-      checkPressedTab(Menu); // Calls the pressed tab function
+      if (Brain.Screen.xPosition() > 384) {
+        Menu.printFile(Data); // Prints File/ graph information page
+        Menu.enableFile = true; // Toggles file buttons functionality to on
+        Menu.enableAuton = false; // Toggles auton buttons functionality to off
+      } else checkPressedTab(Menu); // Calls the pressed tab function
     }
     
     // If the selected tab was "Auton" check if a auton button was pressed
@@ -31,6 +37,7 @@ int MenuHandler(){
       // Stores the value of the selected autonomous program in autoNum
       autoNum = checkPressedAuton(Menu, Brain.Screen.xPosition(), Brain.Screen.yPosition());
     }
+    LCD.render();
 
     wait(250, msec); // Refresh the screen every quarter of a second
   }
@@ -47,12 +54,17 @@ void pre_auton(void) {
 void autonomous(void) {
 
   // If the robot is connected to a competition field, we want to save performance
-  if (Competition.isFieldControl()) {
+  if (Competition.isFieldControl() || Competition.isCompetitionSwitch()) {
     Menu.~LCD_Menu(); // destroy the Menu object
     task::stop(MenuHandler); // Stop the Menu handler task
     MenuON = false; // Ensure the loop stops
   }
-  
+
+  if(Data.isSDInserted){
+    if(!Data.emphasized) Data.emphasizeFile();
+    Data.createFile();
+  }
+
   /*
     Test if the output of the checkAuton function outputs the correct value
 
@@ -83,14 +95,19 @@ void autonomous(void) {
 
 
 void usercontrol(void) {
-
+  
   // This is the main execution loop for the user control program.
   // Each time through the loop your program should update motor
   while (1) {
     
-
     wait(20, msec); // Sleep the task for a short amount of time to
                     // prevent wasted resources.
+  }
+}
+
+void fileGUIHandle(){
+  if(Menu.enableFile && Data.isSDInserted){
+    checkPressedFile(Data, Brain.Screen.xPosition(), Brain.Screen.yPosition()); 
   }
 }
 
@@ -106,6 +123,9 @@ int main() {
 
   // Run the pre-autonomous function.
   pre_auton();
+  
+
+  Brain.Screen.released(fileGUIHandle);
 
   // Create a task for the menu handler function and set the priority low
   task menuTab(MenuHandler, task::taskPrioritylow);
