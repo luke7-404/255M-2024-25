@@ -45,18 +45,13 @@
              * @param x     The current X-coordinate that Odometry function outputs (In inches)  
              * @param y     The current Y-coordinate that Odometry function outputs (In inches)
              * @param rad   The current angle heading that Odometry function outputs (In radiants)
-             * @param Left    The left rotation encoder
-             * @param Middle  The Middle (perpendicular) rotation encoder 
-             * @param Right   The Right rotation encoder 
             */
-            void printOdom(float x, float y, float rad, rotation Left, rotation Middle, rotation Right);
+            void printOdom(float x, float y, float rad);
 
             /**
              * @brief Prints out debugging information for PID
-             * 
-             * @param inert The inertial sensor
             */
-            void printPID(inertial inert);
+            void printPID();
 
             /**
              * @brief Shows data analytics and file information

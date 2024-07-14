@@ -4,22 +4,24 @@ using namespace vex;
 
 // A global instance of brain used for printing to the V5 brain screen
 brain Brain;
+brain Brain_Timeout_timer;
+controller Ctrl = controller(primary);
 
 // Initialize motors and sensors as temporary names 
-motor TestMotor1 = motor(PORT1, ratio18_1, false); 
-motor TestMotor2 = motor(PORT2, ratio18_1, false); 
-motor TestMotor3 = motor(PORT3, ratio18_1, false); 
-motor TestMotor4 = motor(PORT4, ratio18_1, false); 
-motor TestMotor5 = motor(PORT5, ratio18_1, false); 
-motor TestMotor6 = motor(PORT6, ratio18_1, false); 
-motor TestMotor7 = motor(PORT7, ratio18_1, false); 
-motor TestMotor8 = motor(PORT20, ratio18_1, false); 
+motor rightMid = motor(PORT3, ratio18_1, true); 
+motor leftMid = motor(PORT8, ratio18_1, false); 
+motor rightBack = motor(PORT12, ratio18_1, true); 
+motor leftFront = motor(PORT13, ratio18_1, false); 
+motor rightFront = motor(PORT18, ratio18_1, true); 
+motor leftBack = motor(PORT20, ratio18_1, false); 
+motor TEMP_MTR_NAME7 = motor(PORT1, ratio18_1, false); 
+motor TEMP_MTR_NAME8 = motor(PORT2, ratio18_1, false); 
 
-rotation leftTrack = rotation(PORT10, false);
+rotation leftTrack = rotation(PORT17, true);
 rotation middleTrack = rotation(PORT11, false);
-rotation rightTrack = rotation(PORT12, false);
+rotation rightTrack = rotation(PORT7, true);
 
-inertial Inertial = inertial(PORT14);
+inertial Inert = inertial(PORT19);
 
 /**
  * Used to initialize code/tasks/devices added using tools in VEXcode Pro.

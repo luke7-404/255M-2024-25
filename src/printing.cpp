@@ -5,7 +5,7 @@ using namespace std; // Using standard for iostream
 
 
 // Add the motors to the MotorList array
-motor LCD_Menu::MotorList[] = {TestMotor1, TestMotor2, TestMotor3, TestMotor4, TestMotor5, TestMotor6, TestMotor7, TestMotor8};
+motor LCD_Menu::MotorList[] = {leftFront, leftMid, leftBack, rightFront, rightMid, rightBack, TEMP_MTR_NAME7, TEMP_MTR_NAME8};
 
 bool LCD_Menu::enableAuton = true; // Set auton Screen as default
 bool LCD_Menu::enableFile = false; // Set File Screen not as default
@@ -145,7 +145,7 @@ void LCD_Menu::printSystem(){
 }
 
 // Prints out a picture of the vex field with odometry debugging
-void LCD_Menu::printOdom(float x, float y, float rad, rotation Left, rotation Middle, rotation Right){
+void LCD_Menu::printOdom(float x, float y, float rad){
   this->screenClear(); // Clears screen
 
   /* Elements that need to update */
@@ -154,31 +154,32 @@ void LCD_Menu::printOdom(float x, float y, float rad, rotation Left, rotation Mi
   LCD.printAt(30, 107, false, "Angle(RAD):%.2f", rad); // Prints the angle position from Odometry
   
   // Prints the rotation encoder position
-  LCD.printAt(30, 146, false, "Left Track:%.2f", Left.position(deg));
-  LCD.printAt(30, 166, false, "Middle Track:%.2f", Middle.position(deg));
-  LCD.printAt(30, 186, false, "Right Track:%.2f", Right.position(deg));
+  LCD.printAt(30, 146, false, "Left Track:%.2f", leftTrack.position(deg));
+  LCD.printAt(30, 166, false, "Middle Track:%.2f", middleTrack.position(deg));
+  LCD.printAt(30, 186, false, "Right Track:%.2f", rightTrack.position(deg));
 
   /* Static Element */
   
   // If the SD_Card is inserted in the brain
+  /*
   if(Brain.SDcard.isInserted()){
     LCD.drawImageFromFile("hs_field.png", 247, 29); // Prints the field
-  }
+  }*/
 }
 
 // construct panel/ rotational indicator
 panel turnPanel(80, 41, 48, 0, 360);
 
 // Prints out debugging information for PID
-void LCD_Menu::printPID(inertial inert = Inertial){
+void LCD_Menu::printPID(){
   this->screenClear(); // Clears screen
   
   LCD.setPenWidth(4); // Makes the width of shapes bolder
 
   // Rotational circle indicator
-  turnPanel.set_panel_data(Control1.Axis1.value()+Control1.Axis2.value()); // add data too indicator
+  turnPanel.set_panel_data(Inert.heading(deg)); // add data too indicator
   turnPanel.set_data_label_enable(false); // turn off indicator text
-  turnPanel.set_backgroud_color(000,000,000); //fix GUI colors
+  turnPanel.set_background_color(000,000,000); //fix GUI colors
   turnPanel.display(); // print the indicator
 
   // Lateral arrow indicator
@@ -191,7 +192,7 @@ void LCD_Menu::printPID(inertial inert = Inertial){
   /* Elements that need to be updated */
 
   // Prints the Rotational information
-  LCD.printAt(41, 163, false, "Heading(DEG): %d", Control1.Axis1.value()+Control1.Axis2.value());
+  LCD.printAt(41, 163, false, "Heading(DEG): %.2f", Inert.heading(deg));
   LCD.printAt(66, 182, false, "T Error: %.2f", 90.00);
   LCD.printAt(66, 201, false, "T Integ: %.2f", 90.00);
   LCD.printAt(66, 221, false, "T Deriv: %.2f", 90.00);
@@ -219,7 +220,7 @@ void LCD_Menu::printFile(data_collect &Data){
   LCD.printAt(43, 188, false, "Mark Active File");
   
   // add data for x-axis and y-axis
-  dataGraph.add_data(Brain.timer(sec), abs(Control1.Axis1.value()+Control1.Axis2.value()));
+  dataGraph.add_data(Brain.timer(sec), abs(Ctrl.Axis1.value()+Ctrl.Axis2.value()));
   dataGraph.set_x_pass_space_per_frame(10); // x-interval spacing
   dataGraph.draw_line(); // print the graph
 }
@@ -247,7 +248,7 @@ int checkPressedTab(LCD_Menu &Menu){
 
     }else if (pressed_X > 192 && pressed_X <= 288) {
       // Prints the Odometry information page
-      Menu.printOdom(1, 2, 3, leftTrack, middleTrack, rightTrack);
+      Menu.printOdom(1, 2, 3);
       Menu.enableFile = false; // Toggles file buttons functionality to off
       Menu.enableAuton = false; // Toggles auton buttons functionality to off
 

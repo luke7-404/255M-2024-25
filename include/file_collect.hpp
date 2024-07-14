@@ -7,6 +7,7 @@
 #include <fstream>
 #include <stdlib.h>
 #include <math.h>
+#include <vector>
 
 /**
  * @brief Use the data_collect class to interact with file and data collection 
@@ -60,7 +61,7 @@ class data_collect {
          * @note for pid_Data: [0][0-4] is for lateral values
          *                     [1][0-4] is for rotational values
          */
-        void add_Data(short brain_Time, double pid_Data[2][5]);
+        void add_Data(short brain_Time, std::vector<double> pid_Data);
 
         static bool isNameCreated; // Is the file name created
         static bool emphasized; // Is the file name emphasized

@@ -2,20 +2,22 @@ using namespace vex;
 
 // Declare external devices
 extern brain Brain;
-extern motor TestMotor1;
-extern motor TestMotor2;
-extern motor TestMotor3;
-extern motor TestMotor4;
-extern motor TestMotor5;
-extern motor TestMotor6;
-extern motor TestMotor7;
-extern motor TestMotor8;
+extern brain Brain_Timeout_timer;
+extern controller Ctrl;
+extern motor rightMid;
+extern motor leftMid;
+extern motor rightBack;
+extern motor leftBack;
+extern motor rightFront;
+extern motor leftFront;
+extern motor TEMP_MTR_NAME7;
+extern motor TEMP_MTR_NAME8;
 
 extern rotation leftTrack;
 extern rotation middleTrack;
 extern rotation rightTrack;
 
-extern inertial Inertial;
+extern inertial Inert;
 
 /**
  * Used to initialize code/tasks/devices added using tools in VEXcode Pro.

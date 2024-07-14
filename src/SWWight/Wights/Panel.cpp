@@ -13,7 +13,7 @@ panel::panel(int x, int y, int radius, float data_lim_min, float data_lim_max)
     set_data_label_color(SWWColor.sun_flower);
     set_outline_color(SWWColor.clouds);
     set_indicator_color(SWWColor.clouds);
-    set_backgroud_color(SWWColor.midnight_blue);
+    set_background_color(SWWColor.midnight_blue);
 }
 
 void panel::set_data_label_width_height() {
@@ -60,11 +60,11 @@ void panel::set_indicator_color(int r, int g, int b) {
     indicator_color = SWWTool.rgb_to_vex_color(r, g, b);
 }
 
-void panel::set_backgroud_color(const char *hex_color) {
+void panel::set_background_color(const char *hex_color) {
     panel_backgroud_color.web(hex_color);
 }
 
-void panel::set_backgroud_color(int r, int g, int b) {
+void panel::set_background_color(int r, int g, int b) {
     panel_backgroud_color = SWWTool.rgb_to_vex_color(r, g, b);
 }
 

@@ -95,13 +95,13 @@ class panel {
 
     /// @brief set the background of the panel
     /// @param hex_color
-    void set_backgroud_color(const char *hex_color);
+    void set_background_color(const char *hex_color);
 
     /// @brief set the background of the panel
     /// @param r
     /// @param g
     /// @param b
-    void set_backgroud_color(int r, int g, int b);
+    void set_background_color(int r, int g, int b);
 
     /// @brief Attention! This function might change your font
     /// setting on Screen.Remember to RESET your font if you need it.

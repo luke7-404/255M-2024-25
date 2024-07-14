@@ -40,7 +40,7 @@ const string data_collect::nameFile(void){
   // Creates an fstream file to receive the current file index 
   // (opens in read mode)
   fstream file("currentFile.txt", ios::in);
-  
+
   // Checks if the file was opened
   if (file.is_open()){
 
@@ -102,29 +102,25 @@ void data_collect::emphasizeFile(void){
   }
 }
 
-void data_collect::add_Data(short brain_Time, double pid_Data[2][5]){
+void data_collect::add_Data(short brain_Time, vector<double> pid_Data){
 
   // create file object in append mode
   ofstream file_to_add_to(this->createdName, ios::app);
 
   // check if file opened
   if(file_to_add_to.is_open()){
-    
     // Append the time
     file_to_add_to << brain_Time << ",";
 
     /* Floor the double and float values to the 5th decimal place */
 
     /* iterate through PID data */
-    // row for loop
-    for (uint8_t i = 0; i < 2; i++){
-      // column for loop
-      for (uint8_t j = 0; j < 5; j++){
-        
-        // floor array elements and write to file 
-        file_to_add_to << floorf(pid_Data[i][j] * 100000) / 100000 << ",";
-      }   
+    for (uint8_t i = 0; i < pid_Data.size(); i++){
+      
+      // floor array elements and write to file 
+      file_to_add_to << floorf(pid_Data[i] * 100000) / 100000 << ",";
     }
+    
 
     // move to the next line when done
     file_to_add_to << "\n";

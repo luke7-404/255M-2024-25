@@ -37,8 +37,8 @@ int MenuHandler(){
       // Stores the value of the selected autonomous program in autoNum
       autoNum = checkPressedAuton(Menu, Brain.Screen.xPosition(), Brain.Screen.yPosition());
     }
-    LCD.render();
-
+    
+    LCD.render(); // Render the screen (fixes flicker)
     wait(250, msec); // Refresh the screen every quarter of a second
   }
   return 1; // Return any number
@@ -93,13 +93,44 @@ void autonomous(void) {
 
 }
 
-
+// This is the main execution loop for the user control program.
+  // Each time through the loop your program should update motor
 void usercontrol(void) {
   
-  // This is the main execution loop for the user control program.
-  // Each time through the loop your program should update motor
+  // Controller joystick variables
+  short forward = Ctrl.Axis3.value(); // Gets the value of Axis 3
+  short turn = Ctrl.Axis1.value(); // Gets the value of Axis 1
+  
+  // Motor voltage on a range of -12 to 12
+  double leftVolt; // Declare left side voltage 
+  double rightVolt; // Declare right side voltage
+
+  // data
+  std::vector<double> sensData = {0.0, 0.0};
   while (1) {
     
+    // Update variables
+    forward = Ctrl.Axis3.value();
+    turn = Ctrl.Axis1.value();
+
+    // Calculate voltage
+    leftVolt = 12 * ((forward + turn) / 100.0);
+    rightVolt = 12 * ((forward - turn) / 100.0);
+
+    // Apply leftVolt to the left motors
+    leftFront.spin(fwd, leftVolt, volt);
+    leftMid.spin(fwd, leftVolt, volt);
+    leftBack.spin(fwd, leftVolt, volt);
+    // Apply rightVolt to the right motors
+    rightBack.spin(fwd, rightVolt, volt);
+    rightMid.spin(fwd, rightVolt, volt);
+    rightFront.spin(fwd, rightVolt, volt);
+
+    sensData[0] = leftTrack.position(deg);
+    sensData[1] = rightTrack.position(deg);
+
+    Data.add_Data(Brain.timer(sec), sensData);
+
     wait(20, msec); // Sleep the task for a short amount of time to
                     // prevent wasted resources.
   }
@@ -113,7 +144,6 @@ void fileGUIHandle(){
 
 // Main will set up the competition functions and callbacks.
 int main() {
-
   // Print the first screen
   Menu.printAuton();
   
@@ -123,7 +153,6 @@ int main() {
 
   // Run the pre-autonomous function.
   pre_auton();
-  
 
   Brain.Screen.released(fileGUIHandle);
 
