@@ -1,22 +1,22 @@
 // include header
 #include "file_collect.hpp"
+#include "vex.h"
 
 // Using standard libs fstream and iostream
 using namespace std;
 
-// set defaults
-bool data_collect::isNameCreated = false;
-bool data_collect::emphasized = false;
+
+bool data_File::isNameCreated = false; // set the name as not created
+bool data_File::emphasized = false; // set the name as not emphasized
 
 // declare vars
-string data_collect::createdName; 
-short data_collect::currentFileNum;
-bool data_collect::isSDInserted;
+string data_File::createdName; // the name of the created file
+short data_File::currentFileNum; // the number of the current file
+bool data_File::isSDInserted; // is the SD card inserted in the brain
 
-
-// Constructor
-data_collect::data_collect(bool SDInserted){
-  this->isSDInserted = SDInserted;
+// The constructor for the data_File class
+data_File::data_File(bool SDInserted){
+  this->isSDInserted = SDInserted; // set the bool
   
   // If the SDcard is inserted in the brain, a file is made
   if(SDInserted){
@@ -24,18 +24,18 @@ data_collect::data_collect(bool SDInserted){
     createdName = this->nameFile(); // assign the file name to the output of the nameFile function
     //cout << createdName << endl; // Print file name for debugging
 
-  } else this->~data_collect(); // If the SDcard is not in the brain then we destroy the object 
+  } else this->~data_File(); // If the SDcard is not in the brain then we destroy the object 
 }
 
 
 // Deconstructor
-data_collect::~data_collect(void){
+data_File::~data_File(void){
   // debug message: let me know if object hit error
   cout << "File object was destroyed or not created" << endl;
 }
 
 // Creates the file name
-const string data_collect::nameFile(void){
+const string data_File::nameFile(void){
   
   // Creates an fstream file to receive the current file index 
   // (opens in read mode)
@@ -58,9 +58,6 @@ const string data_collect::nameFile(void){
 
     // Increment then write back for the next file
     file << currentFileNum+1;
-
-    // Prints the string that was converted and the string that was written
-    //cout << currentFileNum << " | " << currentFileNum+1 << endl; 
     
     file.close(); // Close and save the file
 
@@ -71,7 +68,8 @@ const string data_collect::nameFile(void){
   return "error"; // If it did not return sooner, it returns error as the string
 }
 
-void data_collect::createFile(void){
+// Creates a file and writes the header row of a CSV file with specific data fields.
+void data_File::createFile(void){
 
   // make a file object that writes to the active file
   ofstream dataFile(this->createdName, ios::out);
@@ -81,17 +79,29 @@ void data_collect::createFile(void){
     isNameCreated = true; // let the program know that the name was created
     
     // write the first row of the CSV
-    dataFile << "Total Time," 
-            << "Drivetrain Avg," << "Lat Error," << "Lat Deriv," << "Prev Error,"  << "Lat Mtr Pwr," 
-            << "Inertial Position," << "Rot Error,"  << "Rot Deriv," << "Turn Prev Error," << "Rot Mtr Pwr," << "\n";
+    dataFile << "Total Time," << "Auton Selected,"
+            // PID
+             << "Error," << "Prev Error," << "Integral," << "Derivative," << "Drive Power,"
+             << "Turn Error," << "Prev Turn Error," << "Turn Integral," << "Turn Derivative," << "Turn Power,"
+            // Odom
+             << "Left TW," << "Prev Left TW," << "Delta Dist L,"
+             << "Right TW," << "Prev Right TW," << "Delta Dist R,"
+             << "Side TW," << "Prev Side TW," << "Delta Dist S,"
+             << "Inertial Sensor," << "Prev Inertial Sensor," << "Delta Theta,"
+             << "avgThetaForArc,"
+             << "Delta X Local," << "Delta X Global," << "X Pos Global,"
+             << "Delta Y Local," << "Delta Y Global," << "Y Pos Global,"
+            // Motors
+             << "AVG Temp," << "AVG Volt," << "AVG Current," << "AVG Torx," << "AVG Effic"
+            << "\n";
 
     
     dataFile.close(); // Closes and saves the file
-    cout << "header written" << endl; // debug that data has been written
-  } else this->~data_collect(); // If the file does not open then we destroy the object
+    //cout << "header written" << endl; // debug that data has been written
+  } else this->~data_File(); // If the file does not open then we destroy the object
 }
 
-void data_collect::emphasizeFile(void){
+void data_File::emphasizeFile(void){
   
   // if the object has not been emphasized yet
   if (!this->emphasized){
@@ -102,116 +112,23 @@ void data_collect::emphasizeFile(void){
   }
 }
 
-void data_collect::add_Data(short brain_Time, vector<double> pid_Data){
+void data_File::append_Data(short brain_Time, short autonSelection, std::vector<double> auton_data, std::vector<double> motor_data){
 
   // create file object in append mode
   ofstream file_to_add_to(this->createdName, ios::app);
 
   // check if file opened
   if(file_to_add_to.is_open()){
-    // Append the time
-    file_to_add_to << brain_Time << ",";
-
-    /* Floor the double and float values to the 5th decimal place */
-
-    /* iterate through PID data */
-    for (uint8_t i = 0; i < pid_Data.size(); i++){
-      
-      // floor array elements and write to file 
-      file_to_add_to << floorf(pid_Data[i] * 100000) / 100000 << ",";
-    }
+    // Append the time and auton selection
+    file_to_add_to << Brain.timer(sec) << "," << autonSelection << ",";
     
-
+    // Append the floored data
+    for (auto &&i : auton_data) file_to_add_to << floor(i * 10000) / 10000 << ","; // auton
+    for (auto &&i : motor_data) file_to_add_to << floor(i * 10000) / 10000 << ","; // motor
+    
     // move to the next line when done
     file_to_add_to << "\n";
 
-    // save and close file
-    file_to_add_to.close();
+    file_to_add_to.close(); // save and close file
   }
-  cout << "data written" << endl; // debug message
 }
-
-
-
-
-// LAST YEAR'S CODE (eww)
-/*
-
-
-// And writes the data to the SD card
-void addData(short driverTime, int avg, double InertPos, int latErr, double rotErr, int latDeriv,  
-              double rotDeriv, int latPrevErr, double rotPrevErr, double RotMtrPwr, double LatMtrPwr){
-
-  totalElapsedTime = Brain.Timer.value();
- 
-  // Calculate the average temperature of all 8 motors in Fahrenheit
-
-  double* tempPtr = new double; // Create a temporary pointer that points to the average of all the motors
-  
-  *tempPtr = (leftFront.temperature(fahrenheit) + 
-              leftMid.temperature(fahrenheit) + 
-              leftBack.temperature(fahrenheit) + 
-              rightBack.temperature(fahrenheit) + 
-              rightMid.temperature(fahrenheit) + 
-              rightFront.temperature(fahrenheit) + 
-              Cata.temperature(fahrenheit)+
-              Intake.temperature(fahrenheit))/8;
-
-  
-  float motorTempAvg = floorf(*tempPtr * 10000) / 10000; 
-  delete tempPtr; // delete the pointer so that there is no memory leak
-  // more flooring
-  float flooredInertPos = floorf(InertPos * 10000) / 10000;
-  float flooredRotErr = floorf(rotErr * 10000) / 10000;
-  float flooredRotDeriv = floorf(rotDeriv * 10000) / 10000;
-  float flooredRotPrevErr = floorf(rotPrevErr * 10000) / 10000;
-  float flooredLMP = floorf(LatMtrPwr * 10000) / 10000;
-  float flooredRMP = floorf(RotMtrPwr * 10000) / 10000;
-
-  // Short hand variable names to compact the code
-  
-    l = left
-    r = right
-    m = mid
-    b = back
-    f = front
-    e or Eff = efficiency
-  
-  float lfe, rfe, lme, rme, lbe, rbe, cataEff, intakeEff;
-  
-  // Updating the variables that hold the motor efficiencies
-  lfe = leftFront.efficiency(pct);
-  rfe = rightFront.efficiency(pct);
-  lme = leftMid.efficiency(pct);
-  rme = rightMid.efficiency(pct);
-  lbe = leftBack.efficiency(pct);
-  rbe = rightBack.efficiency(pct);
-  cataEff = Cata.efficiency(pct);
-  intakeEff = Intake.efficiency(pct);     
-
-  // Use the sprintf function to append all the data to the buffer character array (string)
-  sprintf(buffer,"%d, %d , %d , %.4f , %d , %d , %.4f , %d , %.4f , %d , %.4f , %d , %.4f , %.4f , %.4f, %.4f , %.4f , %.4f , %.4f , %.4f , %.4f , %.4f , %.4f\n",
-   totalElapsedTime, driverTime, timesLaunched, motorTempAvg, runAuton, avg, flooredInertPos, latErr, flooredRotErr, latDeriv, 
-   flooredRotDeriv, latPrevErr, flooredRotPrevErr, flooredLMP, flooredRMP, lfe, lme, lbe, rfe, rme, rbe, cataEff, intakeEff);
-  
-  // append the buffer to the data file
-  Brain.SDcard.appendfile(fileName.c_str(), (uint8_t *)buffer, strlen(buffer));
-  
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-*/

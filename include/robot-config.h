@@ -19,6 +19,13 @@ extern rotation rightTrack;
 
 extern inertial Inert;
 
+// A external motor list that contains the available motors
+extern vex::motor MotorList[]; 
+
+extern sonar sonarRight;
+extern sonar sonarBack;
+extern sonar sonarLeft;
+
 /**
  * Used to initialize code/tasks/devices added using tools in VEXcode Pro.
  *

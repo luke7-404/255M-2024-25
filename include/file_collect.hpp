@@ -10,10 +10,10 @@
 #include <vector>
 
 /**
- * @brief Use the data_collect class to interact with file and data collection 
+ * @brief Use the data_File class to interact with file and data collection 
  * 
  */
-class data_collect {
+class data_File {
     
     protected:
     
@@ -32,23 +32,20 @@ class data_collect {
          * 
          * @param SDInserted Is the SD card inserted into the brain
          */
-        data_collect(bool SDInserted);
+        data_File(bool SDInserted);
 
         /**
          * @brief Destroy the data collect object
-         * 
          */
-        ~data_collect(void);
+        ~data_File();
 
         /**
-         * @brief Create a file and prepare for file use 
-         * 
+         * @brief Create a file and prepare for file use
          */
         void createFile(void);
 
         /**
          * @brief emphasize file name so it is easier to discover
-         * 
          */
         void emphasizeFile(void);
 
@@ -56,12 +53,11 @@ class data_collect {
          * @brief A function that adds data to the created file 
          * 
          * @param brain_Time The brain's timer value to get a base data point
-         * @param pid_Data A 2D array that contains the values from the PID
-         * 
-         * @note for pid_Data: [0][0-4] is for lateral values
-         *                     [1][0-4] is for rotational values
+         * @param autonSelection The number that was selected for autonomous
+         * @param auton_Data An array that contains the values from PID and Odom
+         * @param motor_data An array that contains averaged values from all motors 
          */
-        void add_Data(short brain_Time, std::vector<double> pid_Data);
+        void append_Data(short brain_Time, short autonSelection, std::vector<double> auton_data, std::vector<double> motor_data);
 
         static bool isNameCreated; // Is the file name created
         static bool emphasized; // Is the file name emphasized
