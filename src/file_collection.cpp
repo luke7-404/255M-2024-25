@@ -84,9 +84,8 @@ void data_File::createFile(void){
              << "Error," << "Prev Error," << "Integral," << "Derivative," << "Drive Power,"
              << "Turn Error," << "Prev Turn Error," << "Turn Integral," << "Turn Derivative," << "Turn Power,"
             // Odom
-             << "Left TW," << "Prev Left TW," << "Delta Dist L,"
-             << "Right TW," << "Prev Right TW," << "Delta Dist R,"
-             << "Side TW," << "Prev Side TW," << "Delta Dist S,"
+             << "Parallel TW," << "Prev Paral TW," << "Delta Dist Paral,"
+             << "Perpend TW," << "Prev Perpend TW," << "Delta Dist Perpend,"
              << "Inertial Sensor," << "Prev Inertial Sensor," << "Delta Theta,"
              << "avgThetaForArc,"
              << "Delta X Local," << "Delta X Global," << "X Pos Global,"

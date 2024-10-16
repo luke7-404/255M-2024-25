@@ -10,12 +10,11 @@ extern motor rightBack;
 extern motor leftBack;
 extern motor rightFront;
 extern motor leftFront;
-extern motor TEMP_MTR_NAME7;
+extern motor intake;
 extern motor TEMP_MTR_NAME8;
 
-extern rotation leftTrack;
-extern rotation middleTrack;
-extern rotation rightTrack;
+extern rotation YTrack;
+extern rotation XTrack;
 
 extern inertial Inert;
 
@@ -25,6 +24,10 @@ extern vex::motor MotorList[];
 extern sonar sonarRight;
 extern sonar sonarBack;
 extern sonar sonarLeft;
+
+extern digital_out piz;
+
+extern digital_out speaker;
 
 /**
  * Used to initialize code/tasks/devices added using tools in VEXcode Pro.

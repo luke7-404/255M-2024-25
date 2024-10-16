@@ -8,27 +8,29 @@ brain Brain_Timeout_timer;
 controller Ctrl = controller(primary);
 
 // Initialize motors and sensors as temporary names 
-motor rightFront = motor(PORT10, ratio18_1, false);
-motor rightMid = motor(PORT20, ratio18_1, false); 
-motor rightBack = motor(PORT19, ratio18_1, false); 
-motor leftFront = motor(PORT3, ratio18_1, true); 
-motor leftMid = motor(PORT11, ratio18_1, true);
-motor leftBack = motor(PORT12, ratio18_1, true); 
+motor rightFront = motor(PORT5, ratio18_1, false);
+motor rightMid = motor(PORT19, ratio18_1, false); 
+motor rightBack = motor(PORT9, ratio18_1, false); 
+motor leftFront = motor(PORT6, ratio18_1, true); 
+motor leftMid = motor(PORT8, ratio18_1, true);
+motor leftBack = motor(PORT7, ratio18_1, true); 
 
-motor TEMP_MTR_NAME7 = motor(PORT21, ratio18_1, false); 
+motor intake = motor(PORT4, ratio6_1, false); 
 motor TEMP_MTR_NAME8 = motor(PORT21, ratio18_1, false); 
 
-rotation leftTrack = rotation(PORT13, true);
-rotation middleTrack = rotation(PORT9, false);
-rotation rightTrack = rotation(PORT18, true);
+rotation XTrack = rotation(PORT16, false);
+rotation YTrack = rotation(PORT20, true);
 
-inertial Inert = inertial(PORT17);
+inertial Inert = inertial(PORT10, turnType::right);
 
-vex::motor MotorList[] = {leftFront, leftMid, leftBack, rightFront, rightMid, rightBack, TEMP_MTR_NAME7, TEMP_MTR_NAME8};
+vex::motor MotorList[] = {leftFront, leftMid, leftBack, rightFront, rightMid, rightBack, intake, TEMP_MTR_NAME8};
 
 sonar sonarRight = sonar(Brain.ThreeWirePort.E);
 sonar sonarBack = sonar(Brain.ThreeWirePort.C);
 sonar sonarLeft = sonar(Brain.ThreeWirePort.A);
+
+digital_out piz = digital_out(Brain.ThreeWirePort.A);
+digital_out speaker = digital_out(Brain.ThreeWirePort.H);
 
 /**
  * Used to initialize code/tasks/devices added using tools in VEXcode Pro.

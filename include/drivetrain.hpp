@@ -10,14 +10,7 @@
  */
 class PID_Data {
     public:
-        /**
-         * @brief Constructor for the PID_Data object
-         */
-        PID_Data();
-        /**
-         * @brief Destructor for the PID_Data object
-         */
-        ~PID_Data();
+
         /**
          * @brief This variable holds the error value for the PID calculation
          */
@@ -87,14 +80,14 @@ extern bool runControl;
  * @param targetAngle The target angle to face while driving
  * @param timeOutLength The timeout length in milliseconds (default is 2500)
  */
-extern void driveTo(double xTarget, double yTarget, double targetAngle, double timeOutLength = 2500);
+extern void driveToPoint(double xTarget, double yTarget, double timeOutLength = 2500);
 
 /**
  * @brief Turns the robot to the specified angle with a specified timeout
  * @param targetAngle The target angle to face
  * @param timeOutLength The timeout length in milliseconds (default is 2500)
  */
-extern void turnTo(double targetAngle, double timeOutLength = 2500);
+extern void turnToAngle(double targetAngle, double timeOutLength = 2500);
 
 /**
  * @brief Turns the robot to the specified coordinate with a specified timeout
@@ -131,12 +124,14 @@ extern double radToDeg(double rad);
 /**
  * @brief Updates the PID calculation for driving
  */
-void drivePID();
+double ControlSense(double percent, int selectedCurve = 0);
+
+extern void joeySticks(int32_t forward, int32_t turn);
 
 /**
- * @brief Updates the PID calculation for turning
+ * @brief Updates the PID calculation for turning and driving
  */
-void turnPID();
+void PID();
 
 /**
  * @brief Controls the drive motor power based on the PID calculation

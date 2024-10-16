@@ -1,12 +1,5 @@
 #include "odometry.hpp"
-
-Odom_Data::Odom_Data(){
-  std::cout << "Odom_Data object created" << std::endl;
-}
-
-Odom_Data::~Odom_Data(){
-  std::cout << "Odom_Data object destroyed" << std::endl;
-}
+#include "drivetrain.hpp"
 
 //* CONSTANTS */
 //Radius of tracking wheels in inches
@@ -124,8 +117,9 @@ int positionTracking() {
 
 
     //loop every 20 milliseconds
-    task::sleep(20); // was 10
+    task::sleep(10); // was 10
 
   }
   return 1;
 }
+

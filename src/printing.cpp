@@ -138,9 +138,9 @@ void LCD_Menu::printOdom(float x, float y, float deg){
   LCD.printAt(30, 107, false, "Angle(deg):%.2f", deg * 180 / M_PI); // Prints the angle position from Odometry
   
   // Prints the rotation encoder position
-  LCD.printAt(30, 146, false, "Left Track:%.2f", leftTrack.position(rotationUnits::deg));
-  LCD.printAt(30, 166, false, "Middle Track:%.2f", middleTrack.position(rotationUnits::deg));
-  LCD.printAt(30, 186, false, "Right Track:%.2f", rightTrack.position(rotationUnits::deg));
+  //LCD.printAt(30, 146, false, "Left Track:%.2f", leftTrack.position(rotationUnits::deg));
+  LCD.printAt(30, 166, false, "Middle Track:%.2f", XTrack.position(rotationUnits::deg));
+  LCD.printAt(30, 186, false, "Right Track:%.2f", YTrack.position(rotationUnits::deg));
 }
 
 // construct panel/ rotational indicator
@@ -153,7 +153,7 @@ void LCD_Menu::printPID(PID_Data &drive){
   LCD.setPenWidth(4); // Makes the width of shapes bolder
 
   // Rotational circle indicator
-  turnPanel.set_panel_data(Inert.heading(deg)); // add data too indicator
+  turnPanel.set_panel_data(std::fmod((360 - Inert.heading(rotationUnits::deg) + 180), 360)); // add data too indicator
   turnPanel.set_data_label_enable(false); // turn off indicator text
   turnPanel.set_background_color(000,000,000); //fix GUI colors
   turnPanel.display(); // print the indicator
@@ -168,7 +168,7 @@ void LCD_Menu::printPID(PID_Data &drive){
   /* Elements that need to be updated */
 
   // Prints the Rotational information
-  LCD.printAt(41, 163, false, "Heading(DEG): %.2f", Inert.heading(deg));
+  LCD.printAt(41, 163, false, "Heading(DEG): %.2f", std::fmod((360 - Inert.heading(rotationUnits::deg) + 180), 360));
   LCD.printAt(66, 182, false, "T Error: %.2f", radToDeg(drive.turn_Error));
   LCD.printAt(66, 201, false, "T Integ: %.2f", radToDeg(drive.turn_Integral));
   LCD.printAt(66, 221, false, "T Deriv: %.2f", radToDeg(drive.turn_Derivative));

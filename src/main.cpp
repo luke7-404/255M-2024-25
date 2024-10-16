@@ -11,7 +11,7 @@ competition Competition;
 
 LCD_Menu Menu; // Create a Menu object
 data_File File(Brain.SDcard.isInserted()); // Create a File object
-PID_Data PID; // Create a PID object
+PID_Data PID_Obj; // Create a PID object
 Odom_Data Odom; // Create a Odom object
 
 
@@ -33,7 +33,7 @@ int MenuHandler(){
       
       // If less than or equal to 26, we are finding the tab buttons 
       if (Brain.Screen.yPosition() <= 26){
-        checkPressedTab(Brain.Screen.xPosition(), Menu, PID, Odom, File);
+        checkPressedTab(Brain.Screen.xPosition(), Menu, PID_Obj, Odom, File);
       }
 
       // If the file was emphasized and not printed, print only once
@@ -69,39 +69,35 @@ int gatherData(){
     
     // PID Data
     {
-      auton_data.push_back(PID.error);
-      auton_data.push_back(PID.prevError);
-      auton_data.push_back(PID.integral);
-      auton_data.push_back(PID.derivative);
-      auton_data.push_back(PID.drivePowerPID);
+      auton_data.push_back(PID_Obj.error);
+      auton_data.push_back(PID_Obj.prevError);
+      auton_data.push_back(PID_Obj.integral);
+      auton_data.push_back(PID_Obj.derivative);
+      auton_data.push_back(PID_Obj.drivePowerPID);
       // Convert turn data to degrees
-      auton_data.push_back(radToDeg(PID.turn_Error));
-      auton_data.push_back(radToDeg(PID.turn_PrevError));
-      auton_data.push_back(radToDeg(PID.turn_Integral));
-      auton_data.push_back(radToDeg(PID.turn_Derivative));
-      auton_data.push_back(PID.turnPowerPID);
+      auton_data.push_back(radToDeg(PID_Obj.turn_Error));
+      auton_data.push_back(radToDeg(PID_Obj.turn_PrevError));
+      auton_data.push_back(radToDeg(PID_Obj.turn_Integral));
+      auton_data.push_back(radToDeg(PID_Obj.turn_Derivative));
+      auton_data.push_back(PID_Obj.turnPowerPID);
     }
     
     // Odom Data
     {
-      // Left sensor data
-      auton_data.push_back(Odom.LPos);
-      auton_data.push_back(Odom.LPrevPos);
-      auton_data.push_back(Odom.deltaDistL);
-      // Right sensor data
-      auton_data.push_back(Odom.RPos);
-      auton_data.push_back(Odom.RPrevPos);
-      auton_data.push_back(Odom.deltaDistR);
+      // Parallel sensor data
+      auton_data.push_back(Odom.YTrackPos);
+      auton_data.push_back(Odom.YPrevPos);
+      auton_data.push_back(Odom.deltaDistY);
       // Perpendicular sensor data
-      auton_data.push_back(Odom.SPos);
-      auton_data.push_back(Odom.SPrevPos);
-      auton_data.push_back(Odom.deltaDistS);
+      auton_data.push_back(Odom.XTrackPos);
+      auton_data.push_back(Odom.XPrevPos);
+      auton_data.push_back(Odom.deltaDistX);
       // Inertial sensor data
-      auton_data.push_back(Odom.currentAbsoluteOrientation);
-      auton_data.push_back(Odom.prevTheta);
-      auton_data.push_back(Odom.deltaTheta);
+      auton_data.push_back(radToDeg(Odom.currentAbsoluteOrientation));
+      auton_data.push_back(radToDeg(Odom.prevTheta));
+      auton_data.push_back(radToDeg(Odom.deltaTheta));
       // Arc average
-      auton_data.push_back(Odom.avgThetaForArc);
+      auton_data.push_back(radToDeg(Odom.avgThetaForArc));
       // X-Coordinate Data
       auton_data.push_back(Odom.deltaXLocal); // Change in robot relative position in the X direction
       auton_data.push_back(Odom.deltaXGlobal); // Change in field relative position in the X direction
@@ -111,15 +107,6 @@ int gatherData(){
       auton_data.push_back(Odom.deltaYGlobal); // Change in field relative position in the Y direction
       auton_data.push_back(Odom.yPosGlobal); // Current field relative position in the Y direction
     }
-  
-    // Motor Data
-    /*{
-      motor_data.push_back(averageTemp()); // Get the average temperature
-      motor_data.push_back(averageVolt()); // Get the average voltage
-      motor_data.push_back(averageCurrent()); // Get the average current
-      motor_data.push_back(averageTorx()); // Get the average torque
-      motor_data.push_back(averageEffic()); // Get the average efficiency
-    }*/
     
     // Append data to file
     File.append_Data(Brain.timer(sec), autoNum, auton_data, get_Motor_Data());
@@ -161,7 +148,42 @@ void autonomous(void) {
 
   // Start the drive control task
   task pid(driveControl);
-  driveTo(100, 0, 0, 10000000);
+
+  /*turnToAngle(45);
+  waitUntil(!runControl);
+  turnToAngle(0);
+  waitUntil(!runControl);
+  turnToAngle(45);
+  waitUntil(!runControl);
+  turnToAngle(90);
+  waitUntil(!runControl);
+  turnToAngle(135);
+  waitUntil(!runControl);
+  turnToAngle(180);
+  waitUntil(!runControl);
+  turnToAngle(225);
+  waitUntil(!runControl);
+  turnToAngle(270);
+  waitUntil(!runControl);
+  turnToAngle(315);
+  waitUntil(!runControl);
+  turnToAngle(0);
+  waitUntil(!runControl);
+  turnToAngle(45);
+  waitUntil(!runControl);
+  turnToAngle(90);
+  waitUntil(!runControl);*/
+  driveToPoint(48, 72, 50000);
+  //driveToPoint(48, 48, 50000);
+  /*for (size_t i = 0; i < 10; i++)
+  {
+    turnTo(Inert.heading(degrees)+90);
+    waitUntil(!runControl);
+  }*/
+  
+  
+  //turnToPoint(0, 144);
+  
   // The case number is related to the value of the input variable
   switch (autoNum){
     case 0:
@@ -190,33 +212,22 @@ void autonomous(void) {
 
 
 void usercontrol(void) {
-  //runControl = false;
-  // Controller joystick variables
-  short forward = Ctrl.Axis3.value(); // Gets the value of Axis 3
-  short turn = Ctrl.Axis1.value(); // Gets the value of Axis 1
+    
   
-  // Motor voltage on a range of -12 to 12
-  double leftVolt; // Declare left side voltage 
-  double rightVolt; // Declare right side voltage
 
   while (1) {
+    runControl = false;
+    joeySticks(Ctrl.Axis3.value(), Ctrl.Axis1.value());
     
-    // Update variables
-    forward = Ctrl.Axis3.value();
-    turn = Ctrl.Axis1.value();
+    //speaker.set(true);
 
-    // Calculate voltage
-    leftVolt = 12 * ((forward + turn) / 100.0);
-    rightVolt = 12 * ((forward - turn) / 100.0);
+    if (Ctrl.ButtonL1.pressing()){
+      intake.spin(fwd, 100, pct);
+    } else if (Ctrl.ButtonL2.pressing()){
+      intake.spin(directionType::rev, 100, pct);
+    } else intake.stop(coast);
+    
 
-    // Apply leftVolt to the left motors
-    leftFront.spin(fwd, leftVolt, volt);
-    leftMid.spin(fwd, leftVolt, volt);
-    leftBack.spin(fwd, leftVolt, volt);
-    // Apply rightVolt to the right motors
-    rightBack.spin(fwd, rightVolt, volt);
-    rightMid.spin(fwd, rightVolt, volt);
-    rightFront.spin(fwd, rightVolt, volt);
 
     wait(20, msec); // Sleep the task for a short amount of time to
                     // prevent wasted resources.
@@ -230,6 +241,10 @@ void fileGUIHandle(){
   }
 }
 
+void pistonGo(){
+  piz.set(!piz.value());
+}
+
 // Create a task for the menu handler function and set the priority low
 task menuTab(MenuHandler, task::taskPrioritylow);
 
@@ -240,7 +255,9 @@ int main() {
   calibrate_IMU();
   reset_Tracking_Wheels();
 
-  //task odometryTask(positionTracking);
+  task odometryTask(positionTracking);
+
+  Ctrl.ButtonA.pressed(pistonGo);
 
   // Set up callbacks for autonomous and driver control periods.
   Competition.autonomous(autonomous);

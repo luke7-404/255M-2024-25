@@ -3,6 +3,7 @@
 #define ODOMETRY_HPP_
 
 #include "position.hpp"
+#include "cmath"
 
 /** 
 * @brief This class holds the odometry data
@@ -12,20 +13,17 @@ class Odom_Data{
         Odom_Data();
         ~Odom_Data();
 
-        static double LPos; // The current position of the left wheel (DEGREES)
-        static double RPos; // The current position of the right wheel (DEGREES)
-        static double SPos; // The current position of the side wheel (DEGREES)
+        static double YTrackPos; // The current position of the parallel wheel (DEGREES)
+        static double XTrackPos; // The current position of the perpendicular wheel (DEGREES)
         
         static double currentAbsoluteOrientation; //The current angle of the bot (RADIANS)
 
-        static double LPrevPos; // The previous position of the left wheel (DEGREES)
-        static double RPrevPos; // The previous position of the right wheel (DEGREES)
-        static double SPrevPos; // The previous position of the side wheel (DEGREES)
+        static double YPrevPos; // The previous position of the parallel wheel (DEGREES)
+        static double XPrevPos; // The previous position of the perpendicular wheel (DEGREES)
         static double prevTheta; // The previous angle of the bot (RADIANS)
 
-        static double deltaDistL; // The distance traveled by the left wheel (INCHES)
-        static double deltaDistR; // The distance traveled by the right wheel (INCHES)
-        static double deltaDistS; // The distance traveled by the side wheel (INCHES)
+        static double deltaDistY; // The distance traveled by the parallel wheel (INCHES)
+        static double deltaDistX; // The distance traveled by the perpendicular wheel (INCHES)
         static double deltaTheta; // The change in angle of the bot (RADIANS)
 
         static double avgThetaForArc; // The average angle of the bot (RADIANS)
