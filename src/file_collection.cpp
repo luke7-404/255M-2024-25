@@ -1,6 +1,5 @@
 // include header
 #include "file_collect.hpp"
-#include "vex.h"
 
 // Using standard libs fstream and iostream
 using namespace std;
@@ -84,14 +83,15 @@ void data_File::createFile(void){
              << "Error," << "Prev Error," << "Integral," << "Derivative," << "Drive Power,"
              << "Turn Error," << "Prev Turn Error," << "Turn Integral," << "Turn Derivative," << "Turn Power,"
             // Odom
-             << "Parallel TW," << "Prev Paral TW," << "Delta Dist Paral,"
-             << "Perpend TW," << "Prev Perpend TW," << "Delta Dist Perpend,"
-             << "Inertial Sensor," << "Prev Inertial Sensor," << "Delta Theta,"
-             << "avgThetaForArc,"
-             << "Delta X Local," << "Delta X Global," << "X Pos Global,"
-             << "Delta Y Local," << "Delta Y Global," << "Y Pos Global,"
+             << "Parallel TW (Y)," << "Prev Parallel TW (Y)," << "Delta Dist Parallel (Y),"
+             << "Perpendicular TW (X)," << "Prev Perpendicular TW (X)," << "Delta Dist Perpendicular (X),"
+             << "Current Theta (calculated inertial)," << "Previous Theta," << "Delta Theta,"
+             << "Local X Position," << "Local Y Position,"
+             << "Local Polar Angle," << "Local Polar Pos,"
+             << "Global Polar Angle,"
+             << "Global X Position," << "Global Y Position," 
             // Motors
-             << "AVG Temp," << "AVG Volt," << "AVG Current," << "AVG Torx," << "AVG Effic"
+             << "AVG Temp (C)," << "AVG Velocity, " << "AVG RPM, " << "AVG Volt," << "AVG Efficiency"
             << "\n";
 
     
@@ -113,17 +113,18 @@ void data_File::emphasizeFile(void){
 
 void data_File::append_Data(short brain_Time, short autonSelection, std::vector<double> auton_data, std::vector<double> motor_data){
 
-  // create file object in append mode
+  // Open file in append mode
   ofstream file_to_add_to(this->createdName, ios::app);
 
-  // check if file opened
+  // check if file opened successfully
   if(file_to_add_to.is_open()){
     // Append the time and auton selection
-    file_to_add_to << Brain.timer(sec) << "," << autonSelection << ",";
+    file_to_add_to << brain_Time << "," << autonSelection << ",";
     
+
     // Append the floored data
-    for (auto &&i : auton_data) file_to_add_to << floor(i * 10000) / 10000 << ","; // auton
-    for (auto &&i : motor_data) file_to_add_to << floor(i * 10000) / 10000 << ","; // motor
+    for (auto &data : auton_data) file_to_add_to << std::fixed << floorf(data * 10000) / 10000 << ","; // auton
+    for (auto &data : motor_data) file_to_add_to << std::fixed << floorf(data * 10000) / 10000 << ","; // motor
     
     // move to the next line when done
     file_to_add_to << "\n";

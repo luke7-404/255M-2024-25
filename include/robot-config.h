@@ -2,7 +2,8 @@ using namespace vex;
 
 // Declare external devices
 extern brain Brain;
-extern brain Brain_Timeout_timer;
+extern brain Drivetrain_Timeout_timer;
+extern brain Motor_Timeout_timer;
 extern controller Ctrl;
 extern motor rightMid;
 extern motor leftMid;
@@ -28,10 +29,3 @@ extern sonar sonarLeft;
 extern digital_out piz;
 
 extern digital_out speaker;
-
-/**
- * Used to initialize code/tasks/devices added using tools in VEXcode Pro.
- *
- * This should be called at the start of your int main function.
- */
-void vexcodeInit(void);

@@ -2,71 +2,8 @@
 #ifndef DRIVETRAIN_HPP_
 #define DRIVETRAIN_HPP_
 
-#include "odometry.hpp"
+#include "vex.h"
 
-/**
- * @brief This class holds the static variables for the PID calculations
- * 
- */
-class PID_Data {
-    public:
-
-        /**
-         * @brief This variable holds the error value for the PID calculation
-         */
-        static double error;
-        /**
-         * @brief This variable holds the previous error value for the PID calculation
-         */
-        static double prevError;
-        /**
-         * @brief This variable holds the integral value for the PID calculation
-         */
-        static double integral;
-        /**
-         * @brief This variable holds the derivative value for the PID calculation
-         */
-        static double derivative;
-        /**
-         * @brief This variable holds the error value for the turn PID calculation
-         */
-        static double turn_Error;
-        /**
-         * @brief This variable holds the previous error value for the turn PID calculation
-         */
-        static double turn_PrevError;
-        /**
-         * @brief This variable holds the integral value for the turn PID calculation
-         */
-        static double turn_Integral;
-        /**
-         * @brief This variable holds the derivative value for the turn PID calculation
-         */
-        static double turn_Derivative;
-        /**
-         * @brief This variable holds the PID power output for the drive
-         */
-        static double drivePowerPID;
-        /**
-         * @brief This variable holds the PID power output for the turn
-         */
-        static double turnPowerPID;
-};
-
-/**
- * @brief This variable holds the target X position to drive to
- */
-extern double targetX;
-
-/**
- * @brief This variable holds the target Y position to drive to
- */
-extern double targetY;
-
-/**
- * @brief This variable holds the target angle to face while driving
- */
-extern double targetAngle;
 
 /**
  * @brief This variable controls if the feedback loop is running
@@ -115,6 +52,16 @@ extern void reset_Tracking_Wheels();
 extern std::vector<double> get_Motor_Data();
 
 /**
+ * @brief Gets the data from the PID and Odometry processes in that order
+ * 
+ * @param PDat A PID object for data collection
+ * @param ODat An Odom object for data collection
+ * 
+ * @return A vector containing the data from PID and Odom
+ */
+extern std::vector<double> get_Auton_Data(PID_Data &PDat, Odom_Data &ODat);
+
+/**
  * @brief Converts radians to degrees
  * @param rad The angle in radians
  * @return The angle in degrees
@@ -137,6 +84,21 @@ void PID();
  * @brief Controls the drive motor power based on the PID calculation
  * @return The control value for the drive motors
  */
-int driveControl();
+extern int driveControl();
+
+/**
+ * @brief Calculates the X and Y position of the robot from its center
+ * @return The X, Y, and current heading
+ */
+extern int positionTracking();
+
+
+/**
+ * @brief Checks if the intake motor's torx is greater than 1
+ * 
+ * @return true 
+ * @return false 
+ */
+extern bool isIntakeStuck();
 
 #endif 

@@ -5,7 +5,6 @@
 
     // Include dependencies
     #include "vex.h"
-    #include "drivetrain.hpp"
     #include "SWWight/SWWight.h"
     
     // Define commonalities
@@ -38,14 +37,15 @@
              * 
              * @param x     The current X-coordinate that Odometry function outputs (In inches)  
              * @param y     The current Y-coordinate that Odometry function outputs (In inches)
-             * @param deg   The current angle heading that Odometry function outputs (In degrees)
+             * @param heading   The current angle heading that Odometry function outputs (In degrees)
             */
-            void printOdom(float x, float y, float deg);
+            void printOdom(float x, float y, float heading);
             /**
              * @brief Prints out debugging information for PID
              * @param drive The PID_Data object
+             * @param heading The current angle heading (In degrees)
             */
-            void printPID(PID_Data &drive);
+            void printPID(PID_Data &drive, float heading);
             /**
              * @brief Shows data analytics and file information
              * @param Data The data_File object
@@ -56,7 +56,7 @@
             static bool enableFile; // A logic variable for when viewing the file screen
             static bool isDeconstructed; // When the class is destructed, the value will terminate the object's ability to print
 
-        protected:
+        private:
             /**
              * @brief Prints the tabs at the top of the screen
             */

@@ -15,7 +15,7 @@
  */
 class data_File {
     
-    protected:
+    private:
     
         static std::string createdName; // Static String that stores the generated file name
         /**

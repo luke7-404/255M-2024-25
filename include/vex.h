@@ -10,7 +10,11 @@
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
+
+// My header files 
 #include "file_collect.hpp"
+#include "Odom_PID.hpp"
+#include "helper_func.hpp"
 
 #include "v5.h"
 #include "v5_vcs.h"
@@ -21,6 +25,3 @@
   do {                                                                         \
     wait(5, msec);                                                             \
   } while (!(condition))
-
-#define repeat(iterations)                                                     \
-  for (int iterator = 0; iterator < iterations; iterator++)

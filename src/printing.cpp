@@ -130,30 +130,29 @@ void LCD_Menu::printSystem(){
 }
 
 // Prints out a picture of the vex field with odometry debugging
-void LCD_Menu::printOdom(float x, float y, float deg){
+void LCD_Menu::printOdom(float x, float y, float heading){
   this->screenClear(); // Clears screen
 
   LCD.printAt(30, 68, false, "X(in.):%.2f", x); // Prints the X position from Odometry
   LCD.printAt(30, 88, false, "Y(in.):%.2f", y); // Prints the Y position from Odometry
-  LCD.printAt(30, 107, false, "Angle(deg):%.2f", deg * 180 / M_PI); // Prints the angle position from Odometry
+  LCD.printAt(30, 107, false, "Angle(deg):%.2f", reduce_negative_180_to_180(radToDeg(heading))); // Prints the angle position from Odometry
   
   // Prints the rotation encoder position
-  //LCD.printAt(30, 146, false, "Left Track:%.2f", leftTrack.position(rotationUnits::deg));
-  LCD.printAt(30, 166, false, "Middle Track:%.2f", XTrack.position(rotationUnits::deg));
-  LCD.printAt(30, 186, false, "Right Track:%.2f", YTrack.position(rotationUnits::deg));
+  LCD.printAt(30, 156, false, "X-Track:%.2f", XTrack.position(rotationUnits::deg));
+  LCD.printAt(30, 176, false, "Y-Track:%.2f", YTrack.position(rotationUnits::deg));
 }
 
 // construct panel/ rotational indicator
 panel turnPanel(80, 41, 48, 0, 360);
 
 // Prints out debugging information for PID
-void LCD_Menu::printPID(PID_Data &drive){
+void LCD_Menu::printPID(PID_Data &drive, float heading){
   this->screenClear(); // Clears screen
   
   LCD.setPenWidth(4); // Makes the width of shapes bolder
 
   // Rotational circle indicator
-  turnPanel.set_panel_data(std::fmod((360 - Inert.heading(rotationUnits::deg) + 180), 360)); // add data too indicator
+  turnPanel.set_panel_data(heading); // add data too indicator
   turnPanel.set_data_label_enable(false); // turn off indicator text
   turnPanel.set_background_color(000,000,000); //fix GUI colors
   turnPanel.display(); // print the indicator
@@ -168,10 +167,10 @@ void LCD_Menu::printPID(PID_Data &drive){
   /* Elements that need to be updated */
 
   // Prints the Rotational information
-  LCD.printAt(41, 163, false, "Heading(DEG): %.2f", std::fmod((360 - Inert.heading(rotationUnits::deg) + 180), 360));
-  LCD.printAt(66, 182, false, "T Error: %.2f", radToDeg(drive.turn_Error));
-  LCD.printAt(66, 201, false, "T Integ: %.2f", radToDeg(drive.turn_Integral));
-  LCD.printAt(66, 221, false, "T Deriv: %.2f", radToDeg(drive.turn_Derivative));
+  LCD.printAt(41, 163, false, "Heading(DEG): %.2f", heading);
+  LCD.printAt(66, 182, false, "T Error: %.2f", drive.turn_Error);
+  LCD.printAt(66, 201, false, "T Integ: %.2f", drive.turn_Integral);
+  LCD.printAt(66, 221, false, "T Deriv: %.2f", drive.turn_Derivative);
   
   // Prints the Lateral information
   //LCD.printAt(275, 163, false, "Direction");
@@ -211,12 +210,12 @@ void checkPressedTab(int32_t pressed_X,LCD_Menu& Menu, PID_Data& PID, Odom_Data&
 
   }else if (pressed_X > 192 && pressed_X <= 288) {
     // Prints the Odometry information page
-    Menu.printOdom(Odom.xPosGlobal, Odom.yPosGlobal, Odom.currentAbsoluteOrientation);
+    Menu.printOdom(Odom.xPosGlobal, Odom.yPosGlobal, Odom.currentTheta);
     Menu.enableFile = false; // Toggles file buttons functionality to off
     Menu.enableAuton = false; // Toggles auton buttons functionality to off
 
   } else if (pressed_X > 288 && pressed_X <= 384) {
-    Menu.printPID(PID); // Prints the PID information page
+    Menu.printPID(PID, reduce_0_to_360(Inert.rotation(rotationUnits::deg)) ); // Prints the PID information page
     Menu.enableFile = false; // Toggles file buttons functionality to off
     Menu.enableAuton = false; // Toggles auton buttons functionality to off
 

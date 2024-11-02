@@ -2,6 +2,7 @@
 
 // Include my libraries
 #include "printing.hpp"
+#include "drivetrain.hpp"
 #include "auton_functions.hpp"
 
 using namespace vex;
@@ -12,9 +13,11 @@ competition Competition;
 LCD_Menu Menu; // Create a Menu object
 data_File File(Brain.SDcard.isInserted()); // Create a File object
 PID_Data PID_Obj; // Create a PID object
-Odom_Data Odom; // Create a Odom object
+Odom_Data Odom_Obj; // Create a Odom object
 
-
+// Create Tasks and set the priorities
+task odometryTask(positionTracking, task::taskPriorityHigh);
+task PID_Task(driveControl, task::taskPriorityHigh);
 
 // A unsigned integer that represents the selected autonomous program
 uint8_t autoNum;
@@ -33,7 +36,7 @@ int MenuHandler(){
       
       // If less than or equal to 26, we are finding the tab buttons 
       if (Brain.Screen.yPosition() <= 26){
-        checkPressedTab(Brain.Screen.xPosition(), Menu, PID_Obj, Odom, File);
+        checkPressedTab(Brain.Screen.xPosition(), Menu, PID_Obj, Odom_Obj, File);
       }
 
       // If the file was emphasized and not printed, print only once
@@ -61,66 +64,16 @@ bool runCollection = false;
 
 // Gathers data from various sources and appends it to a file
 int gatherData(){
-  std::vector<double> auton_data; // create vector for auton data
-  //std::vector<double> motor_data; // create vector for motor data
   
   // Gather data from various sources
   while (runCollection){
     
-    // PID Data
-    {
-      auton_data.push_back(PID_Obj.error);
-      auton_data.push_back(PID_Obj.prevError);
-      auton_data.push_back(PID_Obj.integral);
-      auton_data.push_back(PID_Obj.derivative);
-      auton_data.push_back(PID_Obj.drivePowerPID);
-      // Convert turn data to degrees
-      auton_data.push_back(radToDeg(PID_Obj.turn_Error));
-      auton_data.push_back(radToDeg(PID_Obj.turn_PrevError));
-      auton_data.push_back(radToDeg(PID_Obj.turn_Integral));
-      auton_data.push_back(radToDeg(PID_Obj.turn_Derivative));
-      auton_data.push_back(PID_Obj.turnPowerPID);
-    }
-    
-    // Odom Data
-    {
-      // Parallel sensor data
-      auton_data.push_back(Odom.YTrackPos);
-      auton_data.push_back(Odom.YPrevPos);
-      auton_data.push_back(Odom.deltaDistY);
-      // Perpendicular sensor data
-      auton_data.push_back(Odom.XTrackPos);
-      auton_data.push_back(Odom.XPrevPos);
-      auton_data.push_back(Odom.deltaDistX);
-      // Inertial sensor data
-      auton_data.push_back(radToDeg(Odom.currentAbsoluteOrientation));
-      auton_data.push_back(radToDeg(Odom.prevTheta));
-      auton_data.push_back(radToDeg(Odom.deltaTheta));
-      // Arc average
-      auton_data.push_back(radToDeg(Odom.avgThetaForArc));
-      // X-Coordinate Data
-      auton_data.push_back(Odom.deltaXLocal); // Change in robot relative position in the X direction
-      auton_data.push_back(Odom.deltaXGlobal); // Change in field relative position in the X direction
-      auton_data.push_back(Odom.xPosGlobal); // Current field relative position in the X direction
-      // Y-Coordinate Data
-      auton_data.push_back(Odom.deltaYLocal); // Change in robot relative position in the Y direction
-      auton_data.push_back(Odom.deltaYGlobal); // Change in field relative position in the Y direction
-      auton_data.push_back(Odom.yPosGlobal); // Current field relative position in the Y direction
-    }
-    
     // Append data to file
-    File.append_Data(Brain.timer(sec), autoNum, auton_data, get_Motor_Data());
-    //motor_data.clear(); // Clear the motor data vector for next loop
-    auton_data.clear(); // Clear the auton data vector for next loop
+    File.append_Data(Brain.timer(sec), autoNum, get_Auton_Data(PID_Obj, Odom_Obj), get_Motor_Data());
+    
     task::sleep(20); // Cycle time
   }
   return 1;
-}
-
-bool set_up = true;
-
-void pre_auton(void) {
-  vexcodeInit();
 }
 
 void autonomous(void) {
@@ -146,9 +99,6 @@ void autonomous(void) {
     task dataTask(gatherData, task::taskPrioritylow); // Start task for data collection
   }
 
-  // Start the drive control task
-  task pid(driveControl);
-
   /*turnToAngle(45);
   waitUntil(!runControl);
   turnToAngle(0);
@@ -173,7 +123,7 @@ void autonomous(void) {
   waitUntil(!runControl);
   turnToAngle(90);
   waitUntil(!runControl);*/
-  driveToPoint(48, 72, 50000);
+  driveToPoint(72, 72, 10000);
   //driveToPoint(48, 48, 50000);
   /*for (size_t i = 0; i < 10; i++)
   {
@@ -213,21 +163,23 @@ void autonomous(void) {
 
 void usercontrol(void) {
     
-  
-
   while (1) {
     runControl = false;
     joeySticks(Ctrl.Axis3.value(), Ctrl.Axis1.value());
-    
-    //speaker.set(true);
 
-    if (Ctrl.ButtonL1.pressing()){
-      intake.spin(fwd, 100, pct);
-    } else if (Ctrl.ButtonL2.pressing()){
-      intake.spin(directionType::rev, 100, pct);
-    } else intake.stop(coast);
-    
 
+    // if the intake is stuck and either bumper button is being pressed get intake unstuck
+    if(isIntakeStuck() && (Ctrl.ButtonL1.pressing() || Ctrl.ButtonL2.pressing())) {
+      intake.spinFor(fwd, 360, deg, 100, velocityUnits::pct);
+      
+    } else if(intake.isDone()) { // if the intake is done spinning to get unstuck then enable control
+
+      if (Ctrl.ButtonL1.pressing()){                // if the top bumper is being held down  
+        intake.spin(fwd, 100, pct);                 // out-take
+      } else if (Ctrl.ButtonL2.pressing()){         // if the bottom bumper is being held down
+        intake.spin(directionType::rev, 100, pct);  // intake
+      } else intake.stop(coast);                    // if all else, stop
+    }
 
     wait(20, msec); // Sleep the task for a short amount of time to
                     // prevent wasted resources.
@@ -245,7 +197,6 @@ void pistonGo(){
   piz.set(!piz.value());
 }
 
-// Create a task for the menu handler function and set the priority low
 task menuTab(MenuHandler, task::taskPrioritylow);
 
 // Main will set up the competition functions and callbacks.
@@ -255,16 +206,11 @@ int main() {
   calibrate_IMU();
   reset_Tracking_Wheels();
 
-  task odometryTask(positionTracking);
-
   Ctrl.ButtonA.pressed(pistonGo);
 
   // Set up callbacks for autonomous and driver control periods.
   Competition.autonomous(autonomous);
   Competition.drivercontrol(usercontrol);
-  
-  // Run the pre-autonomous function.
-  pre_auton();
 
   // When the brain screen is released, run the fileGUIHandle function
   Brain.Screen.released(fileGUIHandle); 
