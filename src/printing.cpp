@@ -98,15 +98,15 @@ void LCD_Menu::listMotors(uint16_t start_X, uint16_t start_Y){
 
   // Iterates through the Motor array
   for (short i = 0; i < 8; i++) {
-
+    if(i == 7) break;
     // Print Statement
     /*
       The format:
 
       Motor(PORT#): Temp#, Voltage#, Current#, Torx#, Effic.#
     */
-    LCD.printAt(start_X, start_Y, false, "Motor%d: %.1f, %.3f, %.2f, %.2f, %.4f", 
-    MotorList[i].index()+1, MotorList[i].temperature(pct), MotorList[i].voltage(volt), 
+    LCD.printAt(start_X, start_Y, false, "Motor%d: %.1f, %.2f, %.2f, %.2f, %.2f", 
+    MotorList[i].index()+1, MotorList[i].temperature(celsius), MotorList[i].voltage(volt), 
     MotorList[i].current(amp), MotorList[i].torque(), MotorList[i].efficiency(pct));
 
     start_Y += 20; // Shifts to the next line down
@@ -229,49 +229,49 @@ void checkPressedTab(int32_t pressed_X,LCD_Menu& Menu, PID_Data& PID, Odom_Data&
 
 
 // Checks if a pressed x and y value is where the autonomous selection are
-uint8_t checkPressedAuton(LCD_Menu &Menu, int16_t pressed_X, int16_t pressed_Y){
+short checkPressedAuton(LCD_Menu &Menu, int16_t pressed_X, int16_t pressed_Y){
   
   // Check for selection of autonomous programs in the first row
   if (pressed_Y >= 37 && pressed_Y <= 97) {
+    Menu.printAuton(); // Refresh the screen
+
     // Check for selection of None
     if (pressed_X >= 20 && pressed_X <= 125) {
-      Menu.printAuton(); // Refresh the screen
       LCD.printAt(293, 50, false, "Selected:None");
       return 0;
     }
     // Check for selection of Skills
     else if (pressed_X >= 135 && pressed_X <= 240) {
-      Menu.printAuton(); // Refresh the screen
       LCD.printAt(286, 50, false, "Selected:Skills");
       return 1;
     }
   }
   // Check for selection of autonomous programs in the second row
   else if (pressed_Y >= 102 && pressed_Y <= 162) {
+    Menu.printAuton(); // Refresh the screen
+
     // Check for selection of AWP1
     if (pressed_X >= 20 && pressed_X <= 125) {
-      Menu.printAuton(); // Refresh the screen
       LCD.printAt(294, 50, false, "Selected:AWP1");
       return 2;
     }
     // Check for selection of AWP2
     else if (pressed_X >= 135 && pressed_X <= 240) {
-      Menu.printAuton(); // Refresh the screen
       LCD.printAt(294, 50, false, "Selected:AWP2");
       return 3;
     }
   }
   // Check for selection of autonomous programs in the third row
   else if (pressed_Y >= 167 && pressed_Y <= 227) {
+    Menu.printAuton(); // Refresh the screen
+    
     // Check for selection of Goal Rush
     if (pressed_X >= 20 && pressed_X <= 125) {
-      Menu.printAuton(); // Refresh the screen
       LCD.printAt(271, 50, false, "Selected:Goal Rush");
       return 4;
     }
     // Check for selection of Ring Rush
     else if (pressed_X >= 135 && pressed_X <= 240) {
-      Menu.printAuton(); // Refresh the screen
       LCD.printAt(271, 50, false, "Selected:Ring Rush");
       return 5;
     }

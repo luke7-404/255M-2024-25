@@ -103,7 +103,7 @@
      * 
      * @return Returns an integer based on the selected Autonomous program 
     */
-    extern uint8_t checkPressedAuton(LCD_Menu &Menu, int16_t pressed_X, int16_t pressed_Y);
+    extern short checkPressedAuton(LCD_Menu &Menu, int16_t pressed_X, int16_t pressed_Y);
     
     /**
      * @brief Checks if the pressed x and y value is where the active file button is

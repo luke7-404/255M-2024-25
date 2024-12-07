@@ -20,7 +20,7 @@ data_File::data_File(bool SDInserted){
   // If the SDcard is inserted in the brain, a file is made
   if(SDInserted){
     cout << "File Object created" << endl; // Print that the file obj was created for debugging
-    createdName = this->nameFile(); // assign the file name to the output of the nameFile function
+    this->createdName = this->nameFile(); // assign the file name to the output of the nameFile function
     //cout << createdName << endl; // Print file name for debugging
 
   } else this->~data_File(); // If the SDcard is not in the brain then we destroy the object 
@@ -50,13 +50,13 @@ const string data_File::nameFile(void){
     //cout << line << endl; // Prints the line that was read
 
     // Converts the line read to an int
-    currentFileNum = atoi(line.c_str());
+    this->currentFileNum = atoi(line.c_str());
 
     // Opens the file in write mode and truncates it (clears out the file)
     file.open("currentFile.txt", ios::out | ios::trunc);
 
     // Increment then write back for the next file
-    file << currentFileNum+1;
+    file << this->currentFileNum + 1;
     
     file.close(); // Close and save the file
 
@@ -70,34 +70,36 @@ const string data_File::nameFile(void){
 // Creates a file and writes the header row of a CSV file with specific data fields.
 void data_File::createFile(void){
 
-  // make a file object that writes to the active file
-  ofstream dataFile(this->createdName, ios::out);
-    
-  // Check if the ofstream file opened
-  if(dataFile.is_open()){
-    isNameCreated = true; // let the program know that the name was created
-    
-    // write the first row of the CSV
-    dataFile << "Total Time," << "Auton Selected,"
-            // PID
-             << "Error," << "Prev Error," << "Integral," << "Derivative," << "Drive Power,"
-             << "Turn Error," << "Prev Turn Error," << "Turn Integral," << "Turn Derivative," << "Turn Power,"
-            // Odom
-             << "Parallel TW (Y)," << "Prev Parallel TW (Y)," << "Delta Dist Parallel (Y),"
-             << "Perpendicular TW (X)," << "Prev Perpendicular TW (X)," << "Delta Dist Perpendicular (X),"
-             << "Current Theta (calculated inertial)," << "Previous Theta," << "Delta Theta,"
-             << "Local X Position," << "Local Y Position,"
-             << "Local Polar Angle," << "Local Polar Pos,"
-             << "Global Polar Angle,"
-             << "Global X Position," << "Global Y Position," 
-            // Motors
-             << "AVG Temp (C)," << "AVG Velocity, " << "AVG RPM, " << "AVG Volt," << "AVG Efficiency"
-            << "\n";
+  if(!this->isNameCreated){
+    // make a file object that writes to the active file
+    ofstream dataFile(this->createdName, ios::out);
+      
+    // Check if the ofstream file opened
+    if(dataFile.is_open()){
+      this->isNameCreated = true; // let the program know that the name was created
+      
+      // write the first row of the CSV
+      dataFile << "Total Time," << "Auton Selected,"
+              // PID
+              << "Error," << "Prev Error," << "Integral," << "Derivative," << "Drive Power,"
+              << "Turn Error," << "Prev Turn Error," << "Turn Integral," << "Turn Derivative," << "Turn Power,"
+              // Odom
+              << "Parallel TW (Y)," << "Prev Parallel TW (Y)," << "Delta Dist Parallel (Y),"
+              << "Perpendicular TW (X)," << "Prev Perpendicular TW (X)," << "Delta Dist Perpendicular (X),"
+              << "Current Theta (calculated inertial)," << "Previous Theta," << "Delta Theta,"
+              << "Local X Position," << "Local Y Position,"
+              << "Local Polar Angle," << "Local Polar Pos,"
+              << "Global Polar Angle,"
+              << "Global X Position," << "Global Y Position," 
+              // Motors
+              << "AVG Temp (C)," << "AVG Velocity, " << "AVG RPM, " << "AVG Volt," << "AVG Efficiency"
+              << "\n";
 
-    
-    dataFile.close(); // Closes and saves the file
-    //cout << "header written" << endl; // debug that data has been written
-  } else this->~data_File(); // If the file does not open then we destroy the object
+      
+      dataFile.close(); // Closes and saves the file
+      //cout << "header written" << endl; // debug that data has been written
+    } else this->~data_File(); // If the file does not open then we destroy the object
+  }
 }
 
 void data_File::emphasizeFile(void){

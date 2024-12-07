@@ -5,6 +5,10 @@
 #include "position.hpp"
 #include "cmath"
 
+extern double X_START;
+extern double Y_START;
+ 
+
 /** 
 * @brief This class holds the odometry data
 */
@@ -32,8 +36,15 @@ class Odom_Data{
         
         static double xPosGlobal; // Global X position of the bot relative to the field (INCHES)
         static double yPosGlobal; // Global Y position of the bot relative to the field (INCHES)
-
-};
+        
+        /**
+         * @brief Set the Position object
+         * 
+         * @param x // Desired X position to set to
+         * @param y // Desired Y position to set to
+         */
+        void setPosition(double x, double y);
+};    
 
 
 /**

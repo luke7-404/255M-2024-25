@@ -15,12 +15,8 @@ data_File File(Brain.SDcard.isInserted()); // Create a File object
 PID_Data PID_Obj; // Create a PID object
 Odom_Data Odom_Obj; // Create a Odom object
 
-// Create Tasks and set the priorities
-task odometryTask(positionTracking, task::taskPriorityHigh);
-task PID_Task(driveControl, task::taskPriorityHigh);
-
-// A unsigned integer that represents the selected autonomous program
-uint8_t autoNum;
+// A short integer that represents the selected autonomous program
+short autonSelected = 0;
 
 // If false, stops the menu handler loop
 bool MenuON = true;
@@ -28,12 +24,15 @@ bool MenuON = true;
 // A logic variable to print only once
 bool printed = false;
 
+
 // A integer function that manages function calls for the Menu object
 int MenuHandler(){
+  checkPressedAuton(Menu, 30, 60);
   while(MenuON){
     // Checks if the menu is not deconstructed
     if(!Menu.isDeconstructed){
-      
+      Brain.Screen.render(true); // Render the screen (fixes flicker)
+
       // If less than or equal to 26, we are finding the tab buttons 
       if (Brain.Screen.yPosition() <= 26){
         checkPressedTab(Brain.Screen.xPosition(), Menu, PID_Obj, Odom_Obj, File);
@@ -47,12 +46,12 @@ int MenuHandler(){
 
       // If the selected tab was "Auton" check if a auton button was pressed
       if(Menu.enableAuton){
-        // Stores the value of the selected autonomous program in autoNum
-        autoNum = checkPressedAuton(Menu, Brain.Screen.xPosition(), Brain.Screen.yPosition());
-        positionRobot(autoNum);
+        // Stores the value of the selected autonomous program in autonSelected
+        autonSelected = checkPressedAuton(Menu, Brain.Screen.xPosition(), Brain.Screen.yPosition());
+        positionRobot(autonSelected);
       }
     
-      LCD.render(); // Render the screen (fixes flicker)
+      Brain.Screen.render(true); // Render the screen (fixes flicker)
       task::sleep(250); // Refresh the screen every quarter of a second
     }
   }
@@ -64,13 +63,13 @@ bool runCollection = false;
 
 // Gathers data from various sources and appends it to a file
 int gatherData(){
-  
   // Gather data from various sources
   while (runCollection){
-    
-    // Append data to file
-    File.append_Data(Brain.timer(sec), autoNum, get_Auton_Data(PID_Obj, Odom_Obj), get_Motor_Data());
-    
+    // When the robot is not disabled and the robot is active
+    if (Competition.isAutonomous() || Competition.isDriverControl()){
+      // Append data to file
+      File.append_Data(Brain.timer(sec), autonSelected, get_Auton_Data(PID_Obj, Odom_Obj), get_Motor_Data());
+    }
     task::sleep(20); // Cycle time
   }
   return 1;
@@ -80,106 +79,67 @@ void autonomous(void) {
   reset_Tracking_Wheels();
   // If the robot is connected to a competition field, we want to save performance
   if (Competition.isFieldControl()) {
-    // Emphasize the file name if connect to competition field
-    if(!File.emphasized) File.emphasizeFile(); 
     Menu.~LCD_Menu(); // destroy the Menu object
     task::stop(MenuHandler); // Stop the Menu handler task
     MenuON = false; // Ensure the loop stops
   }
 
-  // Start the data collection task if the robot has an SD card
-  if(File.isSDInserted){
-    File.createFile(); // Create the CSV file and write the header
+  task autoClamp(autoClampClaw, task::taskPrioritylow);
 
-    // If the name has been created successfully,
-    // Lets the data collection loop run
-    if(File.isNameCreated){ 
-      runCollection = true;
-    }
-    task dataTask(gatherData, task::taskPrioritylow); // Start task for data collection
-  }
+  double x = cmToInches(getXDisplacement());
+  double y = cmToInches(getYDisplacement());
 
-  /*turnToAngle(45);
-  waitUntil(!runControl);
-  turnToAngle(0);
-  waitUntil(!runControl);
-  turnToAngle(45);
-  waitUntil(!runControl);
-  turnToAngle(90);
-  waitUntil(!runControl);
-  turnToAngle(135);
-  waitUntil(!runControl);
-  turnToAngle(180);
-  waitUntil(!runControl);
-  turnToAngle(225);
-  waitUntil(!runControl);
-  turnToAngle(270);
-  waitUntil(!runControl);
-  turnToAngle(315);
-  waitUntil(!runControl);
-  turnToAngle(0);
-  waitUntil(!runControl);
-  turnToAngle(45);
-  waitUntil(!runControl);
-  turnToAngle(90);
-  waitUntil(!runControl);*/
-  driveToPoint(72, 72, 10000);
-  //driveToPoint(48, 48, 50000);
-  /*for (size_t i = 0; i < 10; i++)
-  {
-    turnTo(Inert.heading(degrees)+90);
-    waitUntil(!runControl);
-  }*/
-  
-  
-  //turnToPoint(0, 144);
-  
   // The case number is related to the value of the input variable
-  switch (autoNum){
+  switch (autonSelected){
     case 0:
       std::cout << "None Auton" << std::endl;
       break;
     case 1:
       std::cout << "Skills" << std::endl;
+      Odom_Obj.setPosition(72,11.5);
+      Skills();
       break;
     case 2:
       std::cout << "AWP1" << std::endl; // left
+      Odom_Obj.setPosition(x, y);
+      AWP1();
       break;
     case 3:
-      std::cout << "AWP2" << std::endl; // right
+      std::cout << "AWP2" << std::endl; // left
+      Odom_Obj.setPosition(x, y);
+      AWP2();
       break;
     case 4:
       std::cout << "Goal Rush" << std::endl; // right
+      Odom_Obj.setPosition(x, y);
+      goalRush();
       break;
     case 5:
       std::cout << "Ring Rush" << std::endl; // left
+      //Odom_Obj.setPosition(144-x, 18.25);
+      ringRush();
       break;
+    
   }
 }
 
 // This is the main execution loop for the user control program.
-  // Each time through the loop your program should update motor
-
-
+// Each time through the loop your program should update motor
 void usercontrol(void) {
     
   while (1) {
     runControl = false;
     joeySticks(Ctrl.Axis3.value(), Ctrl.Axis1.value());
 
-
-    // if the intake is stuck and either bumper button is being pressed get intake unstuck
-    if(isIntakeStuck() && (Ctrl.ButtonL1.pressing() || Ctrl.ButtonL2.pressing())) {
-      intake.spinFor(fwd, 360, deg, 100, velocityUnits::pct);
-      
-    } else if(intake.isDone()) { // if the intake is done spinning to get unstuck then enable control
-
-      if (Ctrl.ButtonL1.pressing()){                // if the top bumper is being held down  
-        intake.spin(fwd, 100, pct);                 // out-take
-      } else if (Ctrl.ButtonL2.pressing()){         // if the bottom bumper is being held down
-        intake.spin(directionType::rev, 100, pct);  // intake
-      } else intake.stop(coast);                    // if all else, stop
-    }
+    intakeFirst.setVelocity(350, rpm);
+    intakeSecond.setVelocity(100, pct);
+  
+    if (Ctrl.ButtonL1.pressing()){         // if the top bumper is being held down  
+      intake.spin(fwd);                    // out-take
+    } else if (Ctrl.ButtonL2.pressing()){  // if the bottom bumper is being held down
+      intake.spin(reverse);                // intake
+    } else intake.stop(coast);             // if all else, stop
+    
 
     wait(20, msec); // Sleep the task for a short amount of time to
                     // prevent wasted resources.
@@ -193,27 +153,60 @@ void fileGUIHandle(){
   }
 }
 
-void pistonGo(){
-  piz.set(!piz.value());
-}
+/// @brief When called, sets the state of the mogoClaw to the opposite value
+void toggleClaw(){ mogoClaw.set(!mogoClaw.value()); }
 
-task menuTab(MenuHandler, task::taskPrioritylow);
+/// @brief When called, sets the state of the doinker to the opposite value
+void toggleDoinker(){ doinker.set(!doinker.value()); }
+
+/// @brief When called, sets the state of the intakeRaiser to the opposite value
+void toggleRaiser(){ intakeRaiser.set(!intakeRaiser.value()); }
+
+
+task menuTab(MenuHandler);
 
 // Main will set up the competition functions and callbacks.
 int main() {
 
   // Resets sensors
+  reset_LadyBrown();
   calibrate_IMU();
   reset_Tracking_Wheels();
 
-  Ctrl.ButtonA.pressed(pistonGo);
-
-  // Set up callbacks for autonomous and driver control periods.
-  Competition.autonomous(autonomous);
-  Competition.drivercontrol(usercontrol);
+  // CALLBACKS 
+  Ctrl.ButtonA.pressed(toggleClaw);
+  Ctrl.ButtonB.pressed(toggleDoinker);
+  Ctrl.ButtonY.pressed(toggleRaiser);
+  Ctrl.ButtonR2.pressed(LadyBrownRoutine);
 
   // When the brain screen is released, run the fileGUIHandle function
   Brain.Screen.released(fileGUIHandle); 
+
+  // Create Tasks and set the priorities
+  task odometry_Task(positionTracking, task::taskPriorityHigh);
+  task PID_Task(driveControl, task::taskPriorityHigh);
+  task LadyBrown_Task(ladyBrownControl, task::taskPriorityNormal);
+
+  // Start the data collection task if the robot has an SD card
+  if(File.isSDInserted && !File.isNameCreated){
+
+    // Emphasize the file name if connect to competition field
+    if (Competition.isFieldControl() && !File.emphasized) File.emphasizeFile(); 
+
+    File.createFile(); // Create the CSV file and write the header
+    
+    // If the name has been created successfully, let the data collection loop run
+    if(File.isNameCreated) runCollection = true;
+
+    task dataTask(gatherData, task::taskPrioritylow); // Start task for data collection
+  }
+
+  if(!Competition.isAutonomous()) task::stop(autoClampClaw);
+
+  // Set up callbacks for autonomous and driver control periods.
+  //Competition.test_disable();
+  Competition.autonomous(autonomous);
+  Competition.drivercontrol(usercontrol);
 
   // Prevent main from exiting with an infinite loop.
   while (true) {

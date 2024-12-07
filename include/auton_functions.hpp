@@ -10,4 +10,6 @@ extern void Skills();
 extern void goalRush();
 extern void ringRush();
 
+extern int autoClampClaw();
+extern int8_t release;
 #endif

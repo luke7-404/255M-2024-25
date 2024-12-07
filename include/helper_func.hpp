@@ -62,4 +62,25 @@ float reduce_0_to_360(float angle);
 
 float reduce_negative_180_to_180(float angle);
 
+/**
+ * @brief Get the Heading 
+ * @param angle the inertial's rotation value 
+ * @return double 
+ */
+double getHeading(double angle);
+
+/**
+ * @brief Convert inches to cm
+ * @param inches inches
+ * @return double 
+ */
+double inchesToCm(double inches);
+
+/**
+ * @brief Convert cm to inches
+ * @param cm centimeters
+ * @return double 
+ */
+double cmToInches(double cm);
+
 #endif
