@@ -1,10 +1,11 @@
 #include "main.h"
 #include "lemlib/api.hpp" // IWYU pragma: keep
+#include "menu.hpp"
 
 using namespace pros;
 
 // controller
-Controller controller(E_CONTROLLER_MASTER);
+Controller ctrl(E_CONTROLLER_MASTER);
 
 // Ladybrown (5.5 motor)
 Motor ladyBrown(12, MotorGears::green);
@@ -46,27 +47,27 @@ Rotation horizontalEnc(7);
 // vertical tracking wheel encoder. Rotation sensor, port 8, not reversed
 Rotation verticalEnc(8);
 
-// horizontal tracking wheel. 2.75" diameter, 5.75" offset, back of the robot (negative)
-lemlib::TrackingWheel horizontal(&horizontalEnc, lemlib::Omniwheel::NEW_275, -5.75);
+// horizontal tracking wheel. 2.75" diameter, 5.75" offset, front of the robot (positive)
+lemlib::TrackingWheel horizontal(&horizontalEnc, lemlib::Omniwheel::NEW_275, 2.25);
 // vertical tracking wheel. 2.75" diameter, 2.5" offset, left of the robot (negative)
-lemlib::TrackingWheel vertical(&verticalEnc, lemlib::Omniwheel::NEW_275, -2.5);
+lemlib::TrackingWheel vertical(&verticalEnc, lemlib::Omniwheel::NEW_275, -2.25);
 
 
 
 // drivetrain settings
 lemlib::Drivetrain drivetrain(&leftMotors, // left motor group
                               &rightMotors, // right motor group
-                              10, // 10 inch track width
-                              lemlib::Omniwheel::NEW_4, // using new 4" omnis
-                              360, // drivetrain rpm is 360
+                              12, // 12 inch track width
+                              lemlib::Omniwheel::NEW_325, // using new 3.25" omnis 
+                              480, // drivetrain rpm is 480
                               2 // horizontal drift is 2. If we had traction wheels, it would have been 8
 );
 
 // lateral motion controller
-lemlib::ControllerSettings linearController(10, // proportional gain (kP)
-                                            0, // integral gain (kI)
-                                            3, // derivative gain (kD)
-                                            3, // anti windup
+lemlib::ControllerSettings linearController(0.35, // proportional gain (kP)
+                                            0.003, // integral gain (kI)
+                                            0.874, // derivative gain (kD)
+                                            30, // anti windup
                                             1, // small error range, in inches
                                             100, // small error range timeout, in milliseconds
                                             3, // large error range, in inches
@@ -75,13 +76,13 @@ lemlib::ControllerSettings linearController(10, // proportional gain (kP)
 );
 
 // angular motion controller
-lemlib::ControllerSettings angularController(2, // proportional gain (kP)
-                                             0, // integral gain (kI)
-                                             10, // derivative gain (kD)
-                                             3, // anti windup
-                                             1, // small error range, in degrees
+lemlib::ControllerSettings angularController(0.0758, // proportional gain (kP)
+                                             0.00006552, // integral gain (kI)
+                                             0.96, // derivative gain (kD)
+                                             10, // anti windup
+                                             0.5, // small error range, in degrees
                                              100, // small error range timeout, in milliseconds
-                                             3, // large error range, in degrees
+                                             1, // large error range, in degrees
                                              500, // large error range timeout, in milliseconds
                                              0 // maximum acceleration (slew)
 );
@@ -97,17 +98,20 @@ lemlib::OdomSensors sensors(&vertical, // vertical tracking wheel
 // input curve for throttle input during driver control
 lemlib::ExpoDriveCurve throttleCurve(3, // joystick deadband out of 127
                                      10, // minimum output where drivetrain will move out of 127
-                                     1.019 // expo curve gain
+                                     1.043 // expo curve gain
 );
 
 // input curve for steer input during driver control
 lemlib::ExpoDriveCurve steerCurve(3, // joystick deadband out of 127
                                   10, // minimum output where drivetrain will move out of 127
-                                  1.019 // expo curve gain
+                                  1.043 // expo curve gain
 );
 
 // create the chassis
 lemlib::Chassis chassis(drivetrain, linearController, angularController, sensors, &throttleCurve, &steerCurve);
+
+// Create the screen object
+LCD_Menu menu;
 
 /**
  * Runs initialization code. This occurs as soon as the program is started.
@@ -116,30 +120,12 @@ lemlib::Chassis chassis(drivetrain, linearController, angularController, sensors
  * to keep execution time for this mode under a few seconds.
  */
 void initialize() {
-    lcd::initialize(); // initialize brain screen
+    //menu.printAuton();
     chassis.calibrate(); // calibrate sensors
-
-    // the default rate is 50. however, if you need to change the rate, you
-    // can do the following.
-    // lemlib::bufferedStdout().setRate(...);
-    // If you use bluetooth or a wired connection, you will want to have a rate of 10ms
-
-    // for more information on how the formatting for the loggers
-    // works, refer to the fmtlib docs
-
-    // thread to for brain screen and position logging
-    Task screenTask([&]() {
-        while (true) {
-            // print robot location to the brain screen
-            lcd::print(0, "X: %f", chassis.getPose().x); // x
-            lcd::print(1, "Y: %f", chassis.getPose().y); // y
-            lcd::print(2, "Theta: %f", chassis.getPose().theta); // heading
-            // log position telemetry
-            lemlib::telemetrySink()->info("Chassis pose: {}", chassis.getPose());
-            // delay to save resources
-            delay(50);
-        }
-    });
+    ladyLeftRot.reset();
+    ladyRightRot.reset();
+    ladyLeftRot.set_position(0);
+    ladyRightRot.set_position(0);
 }
 
 /**
@@ -155,6 +141,35 @@ void competition_initialize() {}
 // get a path used for pure pursuit
 // this needs to be put outside a function
 ASSET(example_txt); // '.' replaced with "_" to make c++ happy
+
+// Make a PID object to use to output a voltage to the motor
+lemlib::PID PID_LB(0.21, 0, 0, 16, false);
+uint8_t stage = 0; // The stage of the motion that LB is in (0 = at rest | 1 = ready for ring | 2 = in the air)
+double avgPosition = 0.0; // Initialized variable that holds the avgPosition of the LadyBrown rotation sensors
+double targetAngle = 0.0; // Initialized variable that holds the desired position that the LadyBrown should be at
+
+// A void function that run 
+void ladyBrownRoutine(){
+    
+    while(true){
+        switch (stage){
+            case 1:
+                targetAngle = 27.5;
+                break;
+            case 2:
+                targetAngle = 135.5;
+                break;
+            default:
+                stage = 0;
+                targetAngle = 0.2;
+                break;
+        }
+
+        double avgPosition = (ladyLeftRot.get_position()*0.01 + ladyRightRot.get_position()*0.01)/2;
+        ladyBrown.move(PID_LB.update(targetAngle - avgPosition)*12.0);
+        delay(25);
+    }
+}
 
 /**
  * Runs during auto
@@ -194,14 +209,34 @@ void autonomous() {
  * Runs in driver control
  */
 void opcontrol() {
+
+    // Create a background task for ladybrown
+    Task LB_task(ladyBrownRoutine);
+
     // controller
     // loop to continuously update motors
     while (true) {
         // get joystick positions
-        int leftY = controller.get_analog(E_CONTROLLER_ANALOG_LEFT_Y);
-        int rightX = controller.get_analog(E_CONTROLLER_ANALOG_RIGHT_X);
+        int leftY = ctrl.get_analog(E_CONTROLLER_ANALOG_LEFT_Y);
+        int rightX = ctrl.get_analog(E_CONTROLLER_ANALOG_RIGHT_X);
         // move the chassis with curvature drive
         chassis.arcade(leftY, rightX);
+
+        screen::print(E_TEXT_MEDIUM, 0, 2, "Angle Left: %.2f", ladyLeftRot.get_position()*0.01);
+        screen::print(E_TEXT_MEDIUM, 0, 50, "Angle Right: %.2f", ladyRightRot.get_position()*0.01);
+
+        if (ctrl.get_digital(E_CONTROLLER_DIGITAL_L1)){         // if the top bumper is being held down  
+            intake.move(127);                                   // out-take
+        } else if (ctrl.get_digital(E_CONTROLLER_DIGITAL_L2)){  // if the bottom bumper is being held down
+            intake.move(-127);                                  // intake
+        } else intake.brake();                                  // if all else, stop
+
+        //! CALL BACKS
+        if(ctrl.get_digital_new_press(E_CONTROLLER_DIGITAL_R2)) { stage++; } // Lady brown
+        if(ctrl.get_digital_new_press(E_CONTROLLER_DIGITAL_A)) { mogoClaw.toggle(); } // Mogo toggle
+        if(ctrl.get_digital_new_press(E_CONTROLLER_DIGITAL_B)) { doinker.toggle(); } // doinker toggle
+        if(ctrl.get_digital_new_press(E_CONTROLLER_DIGITAL_Y)) { intakeRaiser.toggle(); } // intake raiser toggle
+
         // delay to save resources
         delay(10);
     }
