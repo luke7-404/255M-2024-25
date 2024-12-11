@@ -5,7 +5,7 @@
 #define PRINTING_HPP_ // Define the header file
 
     // Include dependencies
-    #include "main.h"
+    #include "position.hpp"
     
     
     // Define commonalities
@@ -28,7 +28,7 @@
             /**
              * @brief Prints out buttons for auton selection
             */
-            void printAuton();
+            void printAuton(pros::Color color, std::vector<char> autoNum = {'1', '2', '3', '4', '5'});
             /**
              * @brief Prints out system information like motor diagnostics and battery %
             */
@@ -54,7 +54,8 @@
             
             void printFile(data_File &Data);
             */
-            static bool enableAuton; // A logic variable for when viewing the auton screen 
+            static bool enableAuton; // A logic variable for when viewing any auton screen 
+            static bool isBlue; // A logic variable for when viewing the blue auton screen
             //static bool enableFile; // A logic variable for when viewing the file screen
             static bool isDeconstructed; // When the class is destructed, the value will terminate the object's ability to print
 
@@ -82,6 +83,17 @@
              * @param start_Y The inital Y-value to start printing from 
             */
             void listMotors(uint16_t start_X, uint16_t start_Y);
+            
+            
+            /**
+             * @brief Draws the autonomous selection boxes on the screen 
+             * 
+             * @param start_X1 The top left x-coordinate of the first box.
+             * @param start_Y1 The top left y-coordinate of the first box.
+             * @param start_X2 The bottom right x-coordinate of the first box.
+             * @param start_Y2 The bottom right y-coordinate of the first box.
+             */
+            void makeAutonButtons(uint16_t start_X1, uint16_t start_Y1, uint16_t start_X2, uint16_t start_Y2);
 
     };
 
@@ -103,9 +115,9 @@
      * @param pressed_X The X-coordinate that was pressed 
      * @param pressed_Y The Y-coordinate that was pressed
      * 
-     * @return Returns an integer based on the selected Autonomous program 
+     * @return Returns a character based on the selected Autonomous program 
     */
-    extern short checkPressedAuton(LCD_Menu &Menu, int16_t pressed_X, int16_t pressed_Y);
+    extern char checkPressedAuton(LCD_Menu &Menu, int16_t pressed_X, int16_t pressed_Y);
     
     /**
      * @brief Checks if the pressed x and y value is where the active file button is

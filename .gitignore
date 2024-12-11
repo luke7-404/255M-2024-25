@@ -20,10 +20,10 @@ temp.errors
 *.zip
 
 # Docs
-docs/package-lock.json
-docs/package.json
-docs/node_modules/
+docs/
 latex
+.readthedocs.yml
+.github
 
 # MacOS
 .DS_Store

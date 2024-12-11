@@ -3,6 +3,7 @@
 using namespace std; // Using standard for iostream
 
 bool LCD_Menu::enableAuton = true; // Set auton Screen as default
+bool LCD_Menu::isBlue = false; // Set auton Screen as default
 //bool LCD_Menu::enableFile = false; // Set File Screen not as default
 bool LCD_Menu::isDeconstructed = false; // Set the object as not destroyed
 
@@ -23,82 +24,104 @@ LCD_Menu::~LCD_Menu(){
 
 // A function that draws the text for the Tabs at the top of the screen
 void LCD_Menu::makeButtons(){
-
+  LCD::set_eraser(pros::Color::black);
   // Prints Auton in the middle of the lines
-  LCD::draw_line(0, 0, 0, 26); // Draw a divider line
-  LCD::print(pros::text_format_e_t::E_TEXT_MEDIUM, 23, 18, "Auton");
-  LCD::draw_line(96, 0, 96, 26); // Draw a divider line
+  LCD::draw_line(0, 0, 0, 25.5); // Draw a divider line
+  LCD::print(pros::text_format_e_t::E_TEXT_MEDIUM, 15.5, 7.5, "Auton R");
+  LCD::draw_line(96, 0, 96, 25.5); // Draw a divider line
 
   // Prints System in the middle of the lines
-  LCD::print(pros::text_format_e_t::E_TEXT_MEDIUM, 115, 18, "System");
-  LCD::draw_line(192, 0, 192, 26); // Draw a divider line
-  LCD::print(pros::text_format_e_t::E_TEXT_MEDIUM, 221, 18, "Odom"); // Prints Odom in the middle of the lines
-  LCD::draw_line(288, 0, 288, 26); // Draw a divider line
-  LCD::print(pros::text_format_e_t::E_TEXT_MEDIUM, 322, 18, "PID"); // Prints PID in the middle of the lines
-  LCD::draw_line(384, 0, 384, 26); // Draw a divider line
-  LCD::print(pros::text_format_e_t::E_TEXT_MEDIUM, 407, 18, "Files"); // Prints Files in the middle of the lines
-  LCD::draw_line(479, 0, 479, 26); // Draw a divider line
+  LCD::print(pros::text_format_e_t::E_TEXT_MEDIUM, 111, 7.5, "Auton B");
+  LCD::draw_line(192, 0, 192, 25.5); // Draw a divider line
+  LCD::print(pros::text_format_e_t::E_TEXT_MEDIUM, 211.25, 7.5, "System"); // Prints Odom in the middle of the lines
+  LCD::draw_line(288, 0, 288, 25.5); // Draw a divider line
+  LCD::print(pros::text_format_e_t::E_TEXT_MEDIUM, 298, 7.5, "Odom/PID"); // Prints PID in the middle of the lines
+  LCD::draw_line(384, 0, 384, 25.5); // Draw a divider line
+  LCD::print(pros::text_format_e_t::E_TEXT_MEDIUM, 411.5, 7.5, "Data"); // Prints Files in the middle of the lines
+  LCD::draw_line(479, 0, 479, 25.5); // Draw a divider line
 }
 
 // A function that clears the screen and redraws the Tabs and background
 void LCD_Menu::screenClear(){
   LCD::erase(); // Clear the screen
-  LCD::set_pen(BLUE);
-  LCD::fill_rect(0, 26, 480, 214);
-  //LCD::draw_rect(0, 26, 480, 214); // Draws the background
-  LCD::set_pen(pros::Color::white);
+  LCD::set_pen(BLUE); // set the color of the cursor
+  LCD::fill_rect(0, 26, 480, 272); // Draws the background
+  LCD::set_pen(pros::Color::white); // Reset the color
   this->makeButtons(); // Draws the tabs
 }
 
+// Draws the autonomous selection boxes on the screen 
+void LCD_Menu::makeAutonButtons(uint16_t start_X1, uint16_t start_Y1, uint16_t start_X2, uint16_t start_Y2){
+  
+  // for the number of boxes (6)
+  for(uint8_t i = 1; i <= 6; i++){
+    LCD::set_pen(pros::Color::black); // set the fill color of the box
+    
+    // When i is even translate x so it is the second box in the row
+    if (i % 2 == 0) {
+      start_X1 += 121;
+      start_X2 += 121;
+    } 
+    // When i is odd and is not 1, shift x to the first box of the row and then shift down
+    else if ((i % 2 > 0) && i != 1){
+      start_X1 -= 121;
+      start_X2 -= 121;
+      start_Y1 += 69;
+      start_Y2 += 69;
+    }
+    
+    LCD::fill_rect(start_X1, start_Y1, start_X2, start_Y2); // Print box
+    LCD::set_pen(pros::Color::white); // set cursor color to white
+    LCD::draw_rect(start_X1, start_Y1, start_X2, start_Y2); // add outline to box
+  }
+
+}
+
 // A function that translates a character into the bottom right corner
-/*void LCD_Menu::printAutonNumber(uint16_t x_Max, uint16_t y_Max, char autoNum){
-  LCD.setFont(mono15); // Set font size to 15
+void LCD_Menu::printAutonNumber(uint16_t x_Max, uint16_t y_Max, char autoNum){
+  
+  // Set font size to small
+  // Translate the coordinate point to the bottom corner
+  // Print the number
+  LCD::print(pros::text_format_e_t::E_TEXT_MEDIUM, x_Max-12, y_Max-18, "%c", autoNum); 
 
-  // print auton number in the bottom right side of the box
-  LCD.printAt(x_Max-10, y_Max-5, "%c", autoNum);
-
-  // Resets text color and font
-  LCD.setPenColor(vex::white); // Sets the pen color to white
-  LCD.setFont(mono20); // Sets the font size to default
-}*/
+  LCD::set_pen(pros::Color::white); // Reset the pen color to white
+}
 
 // Prints out buttons for auton selection
-void LCD_Menu::printAuton(){
+void LCD_Menu::printAuton(pros::Color color, std::vector<char> autoNum){
   this->screenClear(); // Clears screen to draw shapes  
 
-  // First row Rectangles
-  LCD::draw_rect(20, 37, 105, 60); // First box
-  LCD::set_pen(pros::Color::orange); // set text color orange
-  LCD::print(pros::text_format_e_t::E_TEXT_MEDIUM, 53, 71, "None"); // print none in box
-  //this->printAutonNumber(125, 97, '0'); // Prints 0 in the bottom right corner of the box
+  // Draw boxes
+  this->makeAutonButtons(16, 32, 130, 93.75);
+
+  // First row buttons
+  LCD::set_pen(pros::Color::dark_orange); // set text color orange
+  LCD::print(pros::text_format_e_t::E_TEXT_MEDIUM, 55, 53, "None"); // print none in box
+  this->printAutonNumber(130, 93.75, '0'); // Prints 0 in the bottom right corner of the box
   
-  LCD::draw_rect(135, 37, 105, 60); // Second box
   LCD::set_pen(pros::Color::green); // set text color green
-  LCD::print(pros::text_format_e_t::E_TEXT_MEDIUM, 159, 71, "Skills"); // print skills in box
-  //this->printAutonNumber(240, 97, '1'); // Prints 1 in the bottom right corner of the box
+  LCD::print(pros::text_format_e_t::E_TEXT_MEDIUM, 166, 53, "Skills"); // print skills in box
+  this->printAutonNumber(251, 93.75, autoNum[0]); // Prints the first char
 
-  // Second row Rectangles
-  LCD::draw_rect(20, 102, 105, 60); // Third box
-  LCD::set_pen(pros::Color::red); // set text color red
-  LCD::print(pros::text_format_e_t::E_TEXT_MEDIUM, 54, 137, "AWP1"); // print AWP1 in box
-  //this->printAutonNumber(125, 162, '2'); // Prints 2 in the bottom right corner of the box
+  // Second row buttons
+  LCD::set_pen(color);
+  LCD::print(pros::text_format_e_t::E_TEXT_MEDIUM, 54, 126, "AWP1"); // print AWP1 in box
+  this->printAutonNumber(130, 162.75, autoNum[1]); // Prints the second char
 
-  LCD::draw_rect(135, 102, 105, 60); // Fourth box
-  LCD::set_pen(pros::Color::blue); // set text color blue
-  LCD::print(pros::text_format_e_t::E_TEXT_MEDIUM, 169, 137, "AWP2"); // print AWP2 in box
-  //this->printAutonNumber(240, 162, '3'); // Prints 3 in the bottom right corner of the box
+  LCD::set_pen(color);
+  LCD::print(pros::text_format_e_t::E_TEXT_MEDIUM, 175, 126, "AWP2"); // print AWP2 in box
+  this->printAutonNumber(251, 162.75, autoNum[2]); // Prints the third char
 
-  // Third row Rectangles
-  LCD::draw_rect(20, 167, 105, 60); // Fifth box
-  LCD::set_pen(pros::Color::red); // set text color red 
-  LCD::print(pros::text_format_e_t::E_TEXT_MEDIUM, 27, 201, "Goal\nRush"); // print goal rush in box
-  //this->printAutonNumber(125, 227, '4'); // Prints 4 in the bottom right corner of the box
+  // Third row buttons
+  LCD::set_pen(color);
+  LCD::print(pros::text_format_e_t::E_TEXT_MEDIUM, 28, 194.5, "Goal Rush"); // print goal rush in box
+  this->printAutonNumber(130, 231.75, autoNum[3]); // Prints the fourth char
   
-  LCD::draw_rect(135, 167, 105, 60); // Sixth box
-  LCD::set_pen(pros::Color::blue); // set text color blue
-  LCD::print(pros::text_format_e_t::E_TEXT_MEDIUM, 144, 201, "Ring\nRush"); // print ring rush in box
-  //this->printAutonNumber(240, 227, '5'); // Prints 5 in the bottom right corner of the box
-
+  LCD::set_pen(color);
+  LCD::print(pros::text_format_e_t::E_TEXT_MEDIUM, 149.25, 194.5, "Ring Rush"); // print ring rush in box
+  this->printAutonNumber(251, 231.75, autoNum[4]); // Prints the fifth char
+  
   LCD::set_pen(pros::Color::white);
 }
 
@@ -209,19 +232,22 @@ void LCD_Menu::printFile(data_File &Data){
   LCD.printAt(155, 188, false, "Mark Active File");
 }
 
-void checkPressedTab(int32_t pressed_X,LCD_Menu& Menu, PID_Data& PID, Odom_Data& Odom, data_File& File){
+*/
+void checkPressedTab(int32_t pressed_X,LCD_Menu& Menu){
+  Menu.enableAuton = false; // Toggles auton buttons functionality to on
+  Menu.isBlue = false;
+  //Menu.enableFile = false; // Toggles file buttons functionality to off
+  
   // Checks if a pressed x value is where the Tabs are
   if(pressed_X <= 96){
-    Menu.printAuton(); // Prints the autonomous selection page
+    Menu.printAuton(pros::Color::red); // Prints the autonomous selection page
     Menu.enableAuton = true; // Toggles auton buttons functionality to on
-    Menu.enableFile = false; // Toggles file buttons functionality to off
 
   } else if (pressed_X > 96 && pressed_X <= 192){  
-    Menu.enableFile = false; // Toggles file buttons functionality to off
-    Menu.enableAuton = false; // Toggles auton buttons functionality to off
-    Menu.printSystem();// Prints the System information page
-
-  }else if (pressed_X > 192 && pressed_X <= 288) {
+    Menu.enableAuton = true; // Toggles auton buttons functionality to off
+    Menu.isBlue = true;// Prints the System information page
+    Menu.printAuton(pros::Color::blue, {'A', 'B', 'C', 'D', 'E'});
+  }/*else if (pressed_X > 192 && pressed_X <= 288) {
     // Prints the Odometry information page
     Menu.printOdom(Odom.xPosGlobal, Odom.yPosGlobal, Odom.currentTheta);
     Menu.enableFile = false; // Toggles file buttons functionality to off
@@ -237,64 +263,67 @@ void checkPressedTab(int32_t pressed_X,LCD_Menu& Menu, PID_Data& PID, Odom_Data&
     Menu.enableFile = true; // Toggles file buttons functionality to on
     Menu.enableAuton = false; // Toggles auton buttons functionality to off
   
-  }
+  }*/
 }
 
 
 // Checks if a pressed x and y value is where the autonomous selection are
-short checkPressedAuton(LCD_Menu &Menu, int16_t pressed_X, int16_t pressed_Y){
+char checkPressedAuton(LCD_Menu &Menu, int16_t pressed_X, int16_t pressed_Y){
   
-  // Check for selection of autonomous programs in the first row
-  if (pressed_Y >= 37 && pressed_Y <= 97) {
-    Menu.printAuton(); // Refresh the screen
+  char checkout; // Helper variable that holds values for the return statement
+  
+  // Refresh the screen and print the tab's autons
+  if(Menu.isBlue) Menu.printAuton(pros::Color::blue, {'A', 'B', 'C', 'D', 'E'});
+   else Menu.printAuton(pros::Color::red); 
 
+  LCD::set_eraser(BLUE); // Set the text background color to the default
+
+  // Check for selection of autonomous programs in the first column
+  if (pressed_X >= 15.99 && pressed_X <= 130.01) {
     // Check for selection of None
-    if (pressed_X >= 20 && pressed_X <= 125) {
-      LCD.printAt(293, 50, false, "Selected:None");
+    if (pressed_Y >= 31.99 && pressed_Y <= 93.76) {
+      LCD::print(pros::E_TEXT_MEDIUM, 286, 50, "Selected:None");
       return 0;
     }
-    // Check for selection of Skills
-    else if (pressed_X >= 135 && pressed_X <= 240) {
-      LCD.printAt(286, 50, false, "Selected:Skills");
-      return 1;
+    // Check for selection of AWP1
+    else if (pressed_Y >= 100.99 && pressed_Y <= 162.76) {
+      LCD::print(pros::E_TEXT_MEDIUM, 286, 50, "Selected:AWP1");
+      checkout = 2;
+    }
+    // Check for selection of Goal Rush
+    else if(pressed_Y >= 169.99 && pressed_Y <= 231.76){
+      LCD::print(pros::E_TEXT_MEDIUM, 286, 50, "Selected:Goal Rush");
+      checkout = 4;
     }
   }
-  // Check for selection of autonomous programs in the second row
-  else if (pressed_Y >= 102 && pressed_Y <= 162) {
-    Menu.printAuton(); // Refresh the screen
 
-    // Check for selection of AWP1
-    if (pressed_X >= 20 && pressed_X <= 125) {
-      LCD.printAt(294, 50, false, "Selected:AWP1");
-      return 2;
+  // Check for selection of autonomous programs in the second column
+  else if (pressed_X >= 136.99 && pressed_X <= 251.01) {
+    // Check for selection of Skills
+    if (pressed_Y >= 31.99 && pressed_Y <= 93.76) {
+      LCD::print(pros::E_TEXT_MEDIUM, 286, 50, "Selected:Skills");
+      checkout = 1;
     }
     // Check for selection of AWP2
-    else if (pressed_X >= 135 && pressed_X <= 240) {
-      LCD.printAt(294, 50, false, "Selected:AWP2");
-      return 3;
-    }
-  }
-  // Check for selection of autonomous programs in the third row
-  else if (pressed_Y >= 167 && pressed_Y <= 227) {
-    Menu.printAuton(); // Refresh the screen
-    
-    // Check for selection of Goal Rush
-    if (pressed_X >= 20 && pressed_X <= 125) {
-      LCD.printAt(271, 50, false, "Selected:Goal Rush");
-      return 4;
+    else if (pressed_Y >= 100.99 && pressed_Y <= 162.76) {
+      LCD::print(pros::E_TEXT_MEDIUM, 286, 50, "Selected:AWP2");
+      checkout = 3;
     }
     // Check for selection of Ring Rush
-    else if (pressed_X >= 135 && pressed_X <= 240) {
-      LCD.printAt(271, 50, false, "Selected:Ring Rush");
-      return 5;
+    else if(pressed_Y >= 169.99 && pressed_Y <= 231.76){
+      LCD::print(pros::E_TEXT_MEDIUM, 286, 50, "Selected:Ring Rush");
+      checkout = 5;
     }
-  }
+  } else return 0;
   
-  return 0; // Return 0 if no auton is selected
+  // Return the ASCII representation of the char
+  checkout = Menu.isBlue ? checkout+64 : checkout+48;
+  
+  return checkout; 
 }
 
 // Checks if a pressed x and y value is where the emphasized button is
-void checkPressedFile(data_File &Data, int16_t pressed_X, int16_t pressed_Y){
+/*void checkPressedFile(data_File &Data, int16_t pressed_X, int16_t pressed_Y){
   // check Y range
   if(pressed_Y >= 165 && pressed_Y <= 203){
     // check X range

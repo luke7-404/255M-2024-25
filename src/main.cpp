@@ -37,10 +37,6 @@ Imu imu(6);
 // The distance sensor that detects the claw
 Distance clawDistance(18);
 
-adi::Ultrasonic sonarLeft({5, 'G', 'H'}); 
-adi::Ultrasonic sonarBack({5, 'E', 'F'}); 
-adi::Ultrasonic sonarRight({5, 'A', 'B'}); 
-
 // tracking wheels
 // horizontal tracking wheel encoder. Rotation sensor, port 7, not reversed
 Rotation horizontalEnc(7);
@@ -48,9 +44,9 @@ Rotation horizontalEnc(7);
 Rotation verticalEnc(8);
 
 // horizontal tracking wheel. 2.75" diameter, 5.75" offset, front of the robot (positive)
-lemlib::TrackingWheel horizontal(&horizontalEnc, lemlib::Omniwheel::NEW_275, 2.25);
+lemlib::TrackingWheel horizontal(&horizontalEnc, 2.835, 2.25);
 // vertical tracking wheel. 2.75" diameter, 2.5" offset, left of the robot (negative)
-lemlib::TrackingWheel vertical(&verticalEnc, lemlib::Omniwheel::NEW_275, -2.25);
+lemlib::TrackingWheel vertical(&verticalEnc, 2.835, 0);
 
 
 
@@ -64,9 +60,9 @@ lemlib::Drivetrain drivetrain(&leftMotors, // left motor group
 );
 
 // lateral motion controller
-lemlib::ControllerSettings linearController(0.35, // proportional gain (kP)
-                                            0.003, // integral gain (kI)
-                                            0.874, // derivative gain (kD)
+lemlib::ControllerSettings linearController(5.75, // proportional gain (kP)
+                                            0.0, // integral gain (kI)
+                                            2.05, // derivative gain (kD)
                                             30, // anti windup
                                             1, // small error range, in inches
                                             100, // small error range timeout, in milliseconds
@@ -76,9 +72,9 @@ lemlib::ControllerSettings linearController(0.35, // proportional gain (kP)
 );
 
 // angular motion controller
-lemlib::ControllerSettings angularController(0.0758, // proportional gain (kP)
-                                             0.00006552, // integral gain (kI)
-                                             0.96, // derivative gain (kD)
+lemlib::ControllerSettings angularController(1.5, // proportional gain (kP)
+                                             0, // integral gain (kI)
+                                             10, // derivative gain (kD)
                                              10, // anti windup
                                              0.5, // small error range, in degrees
                                              100, // small error range timeout, in milliseconds
@@ -112,6 +108,52 @@ lemlib::Chassis chassis(drivetrain, linearController, angularController, sensors
 
 // Create the screen object
 LCD_Menu menu;
+char autonID;
+
+/*
+// A integer function that manages function calls for the Menu object
+int MenuHandler(){
+  checkPressedAuton(Menu, 30, 60);
+  while(MenuON){
+    // Checks if the menu is not deconstructed
+    if(!Menu.isDeconstructed){
+      Brain.Screen.render(true); // Render the screen (fixes flicker)
+
+      // If less than or equal to 26, we are finding the tab buttons 
+      if (Brain.Screen.yPosition() <= 26){
+        checkPressedTab(Brain.Screen.xPosition(), Menu, PID_Obj, Odom_Obj, File);
+      }
+
+      // If the file was emphasized and not printed, print only once
+      if (File.emphasized && !printed){
+        LCD.printAt(155, 148, false, "File Emphasized!");
+        printed = true;
+      } 
+
+      // If the selected tab was "Auton" check if a auton button was pressed
+      if(Menu.enableAuton){
+        // Stores the value of the selected autonomous program in autonSelected
+        autonSelected = checkPressedAuton(Menu, Brain.Screen.xPosition(), Brain.Screen.yPosition());
+        positionRobot(autonSelected);
+      }
+    
+      Brain.Screen.render(true); // Render the screen (fixes flicker)
+      task::sleep(250); // Refresh the screen every quarter of a second
+    }
+*/
+
+void printMenu(){
+    while(!menu.isDeconstructed){
+        if(screen::touch_status().y <= 26) checkPressedTab(screen::touch_status().x, menu);
+        
+        if(menu.enableAuton){
+            autonID = checkPressedAuton(menu, screen::touch_status().x, screen::touch_status().y);
+        }
+
+        ctrl.print(0, 2, "away: %.1f", getXDisplacement());
+        delay(250);
+    }
+}
 
 /**
  * Runs initialization code. This occurs as soon as the program is started.
@@ -120,12 +162,12 @@ LCD_Menu menu;
  * to keep execution time for this mode under a few seconds.
  */
 void initialize() {
-    //menu.printAuton();
     chassis.calibrate(); // calibrate sensors
     ladyLeftRot.reset();
     ladyRightRot.reset();
     ladyLeftRot.set_position(0);
     ladyRightRot.set_position(0);
+    Task printGUI(printMenu);
 }
 
 /**
@@ -177,32 +219,13 @@ void ladyBrownRoutine(){
  * This is an example autonomous routine which demonstrates a lot of the features LemLib has to offer
  */
 void autonomous() {
-    // Move to x: 20 and y: 15, and face heading 90. Timeout set to 4000 ms
-    chassis.moveToPose(20, 15, 90, 4000);
-    // Move to x: 0 and y: 0 and face heading 270, going backwards. Timeout set to 4000ms
-    chassis.moveToPose(0, 0, 270, 4000, {.forwards = false});
-    // cancel the movement after it has traveled 10 inches
-    chassis.waitUntil(10);
-    chassis.cancelMotion();
-    // Turn to face the point x:45, y:-45. Timeout set to 1000
-    // dont turn faster than 60 (out of a maximum of 127)
-    chassis.turnToPoint(45, -45, 1000, {.maxSpeed = 60});
-    // Turn to face a direction of 90º. Timeout set to 1000
-    // will always be faster than 100 (out of a maximum of 127)
-    // also force it to turn clockwise, the long way around
-    chassis.turnToHeading(90, 1000, {.direction = AngularDirection::CW_CLOCKWISE, .minSpeed = 100});
-    // Follow the path in path.txt. Lookahead at 15, Timeout set to 4000
-    // following the path with the back of the robot (forwards = false)
-    // see line 116 to see how to define a path
-    chassis.follow(example_txt, 15, 4000, false);
-    // wait until the chassis has traveled 10 inches. Otherwise the code directly after
-    // the movement will run immediately
-    // Unless its another movement, in which case it will wait
-    chassis.waitUntil(10);
-    lcd::print(4, "Traveled 10 inches during pure pursuit!");
-    // wait until the movement is done
+    chassis.setPose(0, 0, 270);
+    chassis.swingToHeading(0, DriveSide::LEFT, 2000, {.direction = AngularDirection::CW_CLOCKWISE});
     chassis.waitUntilDone();
-    lcd::print(4, "pure pursuit finished!");
+    intake.move(-127);
+    delay(500);
+    intake.brake();
+    chassis.moveToPose(0, 0, 270, 10000);
 }
 
 /**
@@ -222,8 +245,8 @@ void opcontrol() {
         // move the chassis with curvature drive
         chassis.arcade(leftY, rightX);
 
-        screen::print(E_TEXT_MEDIUM, 0, 2, "Angle Left: %.2f", ladyLeftRot.get_position()*0.01);
-        screen::print(E_TEXT_MEDIUM, 0, 50, "Angle Right: %.2f", ladyRightRot.get_position()*0.01);
+        //screen::print(E_TEXT_MEDIUM, 0, 2, "Angle Left: %.2f", ladyLeftRot.get_position()*0.01);
+        //screen::print(E_TEXT_MEDIUM, 0, 50, "Angle Right: %.2f", ladyRightRot.get_position()*0.01);
 
         if (ctrl.get_digital(E_CONTROLLER_DIGITAL_L1)){         // if the top bumper is being held down  
             intake.move(127);                                   // out-take

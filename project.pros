@@ -1,7 +1,7 @@
 {
   "py/object": "pros.conductor.project.Project",
   "py/state": {
-    "project_name": "255Moon",
+    "project_name": "255M",
     "target": "v5",
     "templates": {
       "kernel": {
@@ -79,8 +79,7 @@
       }
     },
     "upload_options": {
-      "icon": "X",
-      "slot": 1
+      "icon": "X"
     },
     "use_early_access": false
   }
