@@ -240,7 +240,7 @@ const char* convert_args(const std::string& arg) {
      * reached:
      * EACCESS - Another resource is currently trying to access the screen mutex.
      * 
-     * \return 1 if there were no errors, or PROS_ERR if an error occured 
+     * \return 1 if there were no errors, or PROS_ERR if an error occurred 
      *         taking or returning the screen mutex.
      * 
      *  * \b Example
@@ -269,7 +269,7 @@ const char* convert_args(const std::string& arg) {
      * \param start_line    The line from which scrolling will start
      * \param lines			The number of lines to scroll up
      * 
-     * \return 1 if there were no errors, or PROS_ERR if an error occured
+     * \return 1 if there were no errors, or PROS_ERR if an error occurred
      *  taking or returning the screen mutex.
      * 
      * \b Example
@@ -300,7 +300,7 @@ const char* convert_args(const std::string& arg) {
      * 						rectangular region
      * \param lines 	The number of lines to scroll upwards
      * 
-     * \return 1 if there were no errors, or PROS_ERR if an error occured 
+     * \return 1 if there were no errors, or PROS_ERR if an error occurred 
      * taking or returning the screen mutex.
      * 
      * \b Example
@@ -330,7 +330,7 @@ const char* convert_args(const std::string& arg) {
      * \param stride	Off-screen buffer width in pixels, such that image size
      * 						is stride-padding
      * 
-     * \return 1 if there were no errors, or PROS_ERR if an error occured taking
+     * \return 1 if there were no errors, or PROS_ERR if an error occurred taking
      *  or returning the screen mutex.
      * 
      * \b Example
@@ -355,7 +355,7 @@ const char* convert_args(const std::string& arg) {
      *
      * \param x, y 	The (x,y) coordinates of the pixel
      * 
-     * \return 1 if there were no errors, or PROS_ERR if an error occured 
+     * \return 1 if there were no errors, or PROS_ERR if an error occurred 
      * taking or returning the screen mutex.
      * 
      * \b Example
@@ -381,7 +381,7 @@ const char* convert_args(const std::string& arg) {
      *
      * \param x, y 	The (x,y) coordinates of the erased
      * 
-     * \return 1 if there were no errors, or PROS_ERR if an error occured 
+     * \return 1 if there were no errors, or PROS_ERR if an error occurred 
      * taking or returning the screen mutex.
      * 
      * \b Example
@@ -411,7 +411,7 @@ const char* convert_args(const std::string& arg) {
      * \param x0, y0	The (x, y) coordinates of the first point of the line
      * \param x1, y1 	The (x, y) coordinates of the second point of the line
      * 
-     * \return 1 if there were no errors, or PROS_ERR if an error occured 
+     * \return 1 if there were no errors, or PROS_ERR if an error occurred 
      * taking or returning the screen mutex.
      * 
      * \b Example
@@ -435,7 +435,7 @@ const char* convert_args(const std::string& arg) {
      * \param x0, y0	The (x, y) coordinates of the first point of the line
      * \param x1, y1 	The (x, y) coordinates of the second point of the line
      * 
-     * \return 1 if there were no errors, or PROS_ERR if an error occured 
+     * \return 1 if there were no errors, or PROS_ERR if an error occurred 
      * taking or returning the screen mutex.
      * 
      * \b Example
@@ -461,7 +461,7 @@ const char* convert_args(const std::string& arg) {
      * \param x0, y0 	The (x,y) coordinates of the first point of the rectangle
      * \param x1, y1 	The (x,y) coordinates of the second point of the rectangle
      * 
-     * \return 1 if there were no errors, or PROS_ERR if an error occured 
+     * \return 1 if there were no errors, or PROS_ERR if an error occurred 
      * taking or returning the screen mutex.
      * 
      * \b Example

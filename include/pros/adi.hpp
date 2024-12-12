@@ -963,7 +963,7 @@ class Encoder : private Port {
 	 * 		  sensor with the removable cover side up, and the "bottom" wire from
 	 * 		  the encoder sensor
 	 * \param reverse
-	 *        If "true", the sensor will count in theopposite direction
+	 *        If "true", the sensor will count in the opposite direction
 	 * 
 	 * \b Example
 	 * \code
@@ -1899,7 +1899,7 @@ class Pneumatics : public DigitalOut {
 	 *     if(master.get_digital(pros::E_CONTROLLER_DIGITAL_B)) {
 	 *       left_piston.retract();
 	 *     }
-	 *     if(mastetr.get_digital(pros::E_CONTROLLER_DIGITAL_A)) {
+	 *     if(master.get_digital(pros::E_CONTROLLER_DIGITAL_A)) {
 	 *       left_piston.toggle();
 	 *     }
 	 * 

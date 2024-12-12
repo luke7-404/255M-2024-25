@@ -6,6 +6,8 @@
 
     // Include dependencies
     #include "position.hpp"
+    #include "lemlib/api.hpp" // IWYU pragma: keep
+
     
     
     // Define commonalities
@@ -40,7 +42,7 @@
              * @param x     The current X-coordinate that Odometry function outputs (In inches)  
              * @param y     The current Y-coordinate that Odometry function outputs (In inches)
              * @param heading   The current angle heading that Odometry function outputs (In degrees)
-            
+            */
             void printOdom(float x, float y, float heading);
             /**
              * @brief Prints out debugging information for PID
@@ -106,7 +108,7 @@
      * @param Odom pointer to the Odom object
      * @param File pointer to the File object
     */
-    extern void checkPressedTab(int32_t pressed_X,LCD_Menu& Menu/*, PID_Data& PID, Odom_Data& Odom, data_File& File*/);
+    extern void checkPressedTab(int32_t pressed_X,LCD_Menu& Menu, lemlib::Chassis& chassis);
 
     /**
      * @brief Checks if the pressed x and y value is where the auton buttons are

@@ -163,20 +163,20 @@ void LCD_Menu::printAuton(pros::Color color, std::vector<char> autoNum){
   // Calls the listMotors function
   this->listMotors(39, 83);
 }*/
-/*
+
 // Prints out a picture of the vex field with odometry debugging
 void LCD_Menu::printOdom(float x, float y, float heading){
   this->screenClear(); // Clears screen
-
-  LCD.printAt(30, 68, false, "X(in.):%.2f", x); // Prints the X position from Odometry
-  LCD.printAt(30, 88, false, "Y(in.):%.2f", y); // Prints the Y position from Odometry
-  LCD.printAt(30, 107, false, "Angle(deg):%.2f", reduce_negative_180_to_180(radToDeg(heading))); // Prints the angle position from Odometry
+  LCD::set_eraser(BLUE);
+  LCD::print(pros::E_TEXT_LARGE, 30, 68, "X(in.):%.2f", x); // Prints the X position from Odometry
+  LCD::print(pros::E_TEXT_LARGE, 30, 98, "Y(in.):%.2f", y); // Prints the Y position from Odometry
+  LCD::print(pros::E_TEXT_LARGE, 30, 128, "Angle(deg):%.2f", heading); // Prints the angle position from Odometry
   
   // Prints the rotation encoder position
-  LCD.printAt(30, 156, false, "X-Track:%.2f", XTrack.position(rotationUnits::deg));
-  LCD.printAt(30, 176, false, "Y-Track:%.2f", YTrack.position(rotationUnits::deg));
+  //LCD::print(pros::E_TEXT_MEDIUM, 30, 156, "X-Track:%.2f", xTrack);
+  //LCD::print(pros::E_TEXT_MEDIUM, 30, 176, "Y-Track:%.2f", yTrack);
 }
-
+/*
 // construct panel/ rotational indicator
 panel turnPanel(80, 41, 48, 0, 360);
 
@@ -233,45 +233,49 @@ void LCD_Menu::printFile(data_File &Data){
 }
 
 */
-void checkPressedTab(int32_t pressed_X,LCD_Menu& Menu){
+
+char checkout; // Helper variable that holds values for the return statement
+
+void checkPressedTab(int32_t pressed_X,LCD_Menu& Menu, lemlib::Chassis& chassis){
   Menu.enableAuton = false; // Toggles auton buttons functionality to on
   Menu.isBlue = false;
   //Menu.enableFile = false; // Toggles file buttons functionality to off
   
   // Checks if a pressed x value is where the Tabs are
   if(pressed_X <= 96){
-    Menu.printAuton(pros::Color::red); // Prints the autonomous selection page
     Menu.enableAuton = true; // Toggles auton buttons functionality to on
+    checkout = 0;
+    Menu.printAuton(pros::Color::red); // Prints the autonomous selection page
 
   } else if (pressed_X > 96 && pressed_X <= 192){  
     Menu.enableAuton = true; // Toggles auton buttons functionality to off
     Menu.isBlue = true;// Prints the System information page
+    checkout = 0;
     Menu.printAuton(pros::Color::blue, {'A', 'B', 'C', 'D', 'E'});
-  }/*else if (pressed_X > 192 && pressed_X <= 288) {
+
+  } else if (pressed_X > 192 && pressed_X <= 288) {
     // Prints the Odometry information page
-    Menu.printOdom(Odom.xPosGlobal, Odom.yPosGlobal, Odom.currentTheta);
-    Menu.enableFile = false; // Toggles file buttons functionality to off
+    //Menu.printOdom(Odom.xPosGlobal, Odom.yPosGlobal, Odom.currentTheta);
+    //Menu.enableFile = false; // Toggles file buttons functionality to off
     Menu.enableAuton = false; // Toggles auton buttons functionality to off
 
   } else if (pressed_X > 288 && pressed_X <= 384) {
-    Menu.printPID(PID, reduce_0_to_360(Inert.rotation(rotationUnits::deg)) ); // Prints the PID information page
-    Menu.enableFile = false; // Toggles file buttons functionality to off
+    Menu.printOdom(chassis.getPose().x, chassis.getPose().y, chassis.getPose().theta);
+    //Menu.printPID(PID, reduce_0_to_360(Inert.rotation(rotationUnits::deg)) ); // Prints the PID information page
+    //Menu.enableFile = false; // Toggles file buttons functionality to off
     Menu.enableAuton = false; // Toggles auton buttons functionality to off
 
   } else if (pressed_X > 384) {
-    Menu.printFile(File); // Prints File/ graph information page
-    Menu.enableFile = true; // Toggles file buttons functionality to on
+    //Menu.printFile(File); // Prints File/ graph information page
+    //Menu.enableFile = true; // Toggles file buttons functionality to on
     Menu.enableAuton = false; // Toggles auton buttons functionality to off
   
-  }*/
+  }
 }
-
 
 // Checks if a pressed x and y value is where the autonomous selection are
 char checkPressedAuton(LCD_Menu &Menu, int16_t pressed_X, int16_t pressed_Y){
-  
-  char checkout; // Helper variable that holds values for the return statement
-  
+    
   // Refresh the screen and print the tab's autons
   if(Menu.isBlue) Menu.printAuton(pros::Color::blue, {'A', 'B', 'C', 'D', 'E'});
    else Menu.printAuton(pros::Color::red); 
@@ -292,7 +296,7 @@ char checkPressedAuton(LCD_Menu &Menu, int16_t pressed_X, int16_t pressed_Y){
     }
     // Check for selection of Goal Rush
     else if(pressed_Y >= 169.99 && pressed_Y <= 231.76){
-      LCD::print(pros::E_TEXT_MEDIUM, 286, 50, "Selected:Goal Rush");
+      LCD::print(pros::E_TEXT_MEDIUM, 273, 50, "Selected:Goal Rush");
       checkout = 4;
     }
   }
@@ -311,14 +315,14 @@ char checkPressedAuton(LCD_Menu &Menu, int16_t pressed_X, int16_t pressed_Y){
     }
     // Check for selection of Ring Rush
     else if(pressed_Y >= 169.99 && pressed_Y <= 231.76){
-      LCD::print(pros::E_TEXT_MEDIUM, 286, 50, "Selected:Ring Rush");
+      LCD::print(pros::E_TEXT_MEDIUM, 273, 50, "Selected:Ring Rush");
       checkout = 5;
     }
   } else return 0;
   
   // Return the ASCII representation of the char
-  checkout = Menu.isBlue ? checkout+64 : checkout+48;
-  
+  checkout = Menu.isBlue ? static_cast<char>(checkout+64) : static_cast<char>(checkout+48);
+  positionRobot(checkout);
   return checkout; 
 }
 

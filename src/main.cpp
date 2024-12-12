@@ -1,6 +1,10 @@
+// Pros/ lemlib
 #include "main.h"
 #include "lemlib/api.hpp" // IWYU pragma: keep
+
+// My headers
 #include "menu.hpp"
+#include "autonFunctions.hpp"
 
 using namespace pros;
 
@@ -27,15 +31,12 @@ adi::Pneumatics doinker('C', false);
 //* SENSORS
 
 //Ladybrown sensors
-
 Rotation ladyLeftRot(9); // The ladybrown sensor on the left side
 Rotation ladyRightRot(13); // The ladybrown sensor on the right side
 
 // Inertial Sensor on port 10
 Imu imu(6);
 
-// The distance sensor that detects the claw
-Distance clawDistance(18);
 
 // tracking wheels
 // horizontal tracking wheel encoder. Rotation sensor, port 7, not reversed
@@ -108,51 +109,27 @@ lemlib::Chassis chassis(drivetrain, linearController, angularController, sensors
 
 // Create the screen object
 LCD_Menu menu;
+Auton_Functions autonFunc(chassis, intakeRaiser, mogoClaw, doinker, intake);
 char autonID;
 
-/*
-// A integer function that manages function calls for the Menu object
-int MenuHandler(){
-  checkPressedAuton(Menu, 30, 60);
-  while(MenuON){
-    // Checks if the menu is not deconstructed
-    if(!Menu.isDeconstructed){
-      Brain.Screen.render(true); // Render the screen (fixes flicker)
-
-      // If less than or equal to 26, we are finding the tab buttons 
-      if (Brain.Screen.yPosition() <= 26){
-        checkPressedTab(Brain.Screen.xPosition(), Menu, PID_Obj, Odom_Obj, File);
-      }
-
-      // If the file was emphasized and not printed, print only once
-      if (File.emphasized && !printed){
-        LCD.printAt(155, 148, false, "File Emphasized!");
-        printed = true;
-      } 
-
-      // If the selected tab was "Auton" check if a auton button was pressed
-      if(Menu.enableAuton){
-        // Stores the value of the selected autonomous program in autonSelected
-        autonSelected = checkPressedAuton(Menu, Brain.Screen.xPosition(), Brain.Screen.yPosition());
-        positionRobot(autonSelected);
-      }
-    
-      Brain.Screen.render(true); // Render the screen (fixes flicker)
-      task::sleep(250); // Refresh the screen every quarter of a second
-    }
-*/
-
+// void function that handles screen interactions
 void printMenu(){
+    // while the menu object is able to function
     while(!menu.isDeconstructed){
-        if(screen::touch_status().y <= 26) checkPressedTab(screen::touch_status().x, menu);
+        // check if a tab was pressed
+        if(screen::touch_status().y <= 26) checkPressedTab(screen::touch_status().x, menu, chassis);
         
+        // check if an auton button was pressed
         if(menu.enableAuton){
             autonID = checkPressedAuton(menu, screen::touch_status().x, screen::touch_status().y);
         }
-
-        ctrl.print(0, 2, "away: %.1f", getXDisplacement());
-        delay(250);
+        delay(250); // save computer resources
     }
+}
+
+// void function that handles calling the autoClampClaw function
+void autoClampHandler(){
+    autonFunc.autoClampClaw();
 }
 
 /**
@@ -162,12 +139,16 @@ void printMenu(){
  * to keep execution time for this mode under a few seconds.
  */
 void initialize() {
-    chassis.calibrate(); // calibrate sensors
+    // calibrate sensors
+    chassis.calibrate(); 
     ladyLeftRot.reset();
     ladyRightRot.reset();
     ladyLeftRot.set_position(0);
-    ladyRightRot.set_position(0);
+    ladyRightRot.set_position(0);  
+
+    // start tasks 
     Task printGUI(printMenu);
+    Task autoClamp(autoClampHandler);
 }
 
 /**
@@ -180,35 +161,38 @@ void disabled() {}
  */
 void competition_initialize() {}
 
-// get a path used for pure pursuit
-// this needs to be put outside a function
-ASSET(example_txt); // '.' replaced with "_" to make c++ happy
-
 // Make a PID object to use to output a voltage to the motor
 lemlib::PID PID_LB(0.21, 0, 0, 16, false);
 uint8_t stage = 0; // The stage of the motion that LB is in (0 = at rest | 1 = ready for ring | 2 = in the air)
 double avgPosition = 0.0; // Initialized variable that holds the avgPosition of the LadyBrown rotation sensors
 double targetAngle = 0.0; // Initialized variable that holds the desired position that the LadyBrown should be at
 
-// A void function that run 
-void ladyBrownRoutine(){
+// Function to execute the Lady Brown routine in an infinite loop
+void ladyBrownRoutine() {
     
-    while(true){
-        switch (stage){
+    while (true) {
+        // Determine the target angle based on the current stage
+        switch (stage) {
             case 1:
-                targetAngle = 27.5;
+                targetAngle = 27.5; // Set target angle for stage 1
                 break;
             case 2:
-                targetAngle = 135.5;
+                targetAngle = 135.5; // Set target angle for stage 2
                 break;
             default:
-                stage = 0;
-                targetAngle = 0.2;
+                stage = 0; // Reset stage to initial
+                targetAngle = 0.2; // Set default target angle
                 break;
         }
 
-        double avgPosition = (ladyLeftRot.get_position()*0.01 + ladyRightRot.get_position()*0.01)/2;
-        ladyBrown.move(PID_LB.update(targetAngle - avgPosition)*12.0);
+        // Calculate the average position from two rotational sensors
+        double avgPosition = (ladyLeftRot.get_position() * 0.01 + ladyRightRot.get_position() * 0.01) / 2;
+
+        // Move the Lady Brown mechanism using a PID controller
+        // The movement command is scaled by 12.0
+        ladyBrown.move(PID_LB.update(targetAngle - avgPosition) * 12.0);
+
+        // Delay to control the loop execution frequency
         delay(25);
     }
 }
@@ -219,15 +203,68 @@ void ladyBrownRoutine(){
  * This is an example autonomous routine which demonstrates a lot of the features LemLib has to offer
  */
 void autonomous() {
-    chassis.setPose(0, 0, 270);
-    chassis.swingToHeading(0, DriveSide::LEFT, 2000, {.direction = AngularDirection::CW_CLOCKWISE});
-    chassis.waitUntilDone();
-    intake.move(-127);
-    delay(500);
-    intake.brake();
-    chassis.moveToPose(0, 0, 270, 10000);
-}
+  chassis.swingToHeading(90, DriveSide::LEFT, 2000, {.direction = AngularDirection::CW_CLOCKWISE});
+  chassis.waitUntilDone();
+  intake.move(-127);
+  delay(500);
+  intake.brake();
+  chassis.moveToPose(11.0, 14, 58.25, 2500);
+  chassis.waitUntilDone();
+  chassis.turnToHeading(233.5, 2500);
+  chassis.waitUntilDone();
+  autonFunc.release = 0;
+  chassis.moveToPoint(21, 24, 1250, {.forwards = false, .minSpeed = -31.75});
+  chassis.waitUntilDone();
+  chassis.turnToHeading(-326, 1000);
+  chassis.waitUntilDone();
+  intake.move_voltage(-12000);
+  chassis.moveToPose(31.75, 36.75, 416.87, 3000, {.forwards = true, .maxSpeed = 63.5});
+  //chassis.setPose();
+  
+  // Switch conditional statement to choose from any of the 10 scenarios
+  switch (autonID){
+    
+    case '1': // RED SKILLS
+        Auton_Functions::RED_Auton().Skills();
+        break;
 
+    case 'A': // BLUE SKILLS
+        Auton_Functions::BLUE_Auton().Skills();
+        break;
+
+    case '2': // RED AWP 1
+        Auton_Functions::RED_Auton().AWP1();
+        break;
+
+    case 'B': // BLUE AWP 1
+        Auton_Functions::BLUE_Auton().AWP1();
+        break;
+
+    case '3': // RED AWP 2
+        Auton_Functions::RED_Auton().AWP2();
+        break;
+
+    case 'C': // BLUE AWP 2
+        Auton_Functions::BLUE_Auton().AWP2();
+        break;
+
+    case '4': // RED Goal Rush 
+        Auton_Functions::RED_Auton().goalRush();
+      break;
+
+    case 'D': // BLUE Goal Rush 
+        Auton_Functions::BLUE_Auton().goalRush();
+      break;
+
+    case '5': // RED Ring Rush
+        Auton_Functions::RED_Auton().ringRush();
+      break;
+
+    case 'E': // BLUE Ring Rush
+        Auton_Functions::BLUE_Auton().ringRush();
+      break;
+  }
+}
 /**
  * Runs in driver control
  */
@@ -244,9 +281,6 @@ void opcontrol() {
         int rightX = ctrl.get_analog(E_CONTROLLER_ANALOG_RIGHT_X);
         // move the chassis with curvature drive
         chassis.arcade(leftY, rightX);
-
-        //screen::print(E_TEXT_MEDIUM, 0, 2, "Angle Left: %.2f", ladyLeftRot.get_position()*0.01);
-        //screen::print(E_TEXT_MEDIUM, 0, 50, "Angle Right: %.2f", ladyRightRot.get_position()*0.01);
 
         if (ctrl.get_digital(E_CONTROLLER_DIGITAL_L1)){         // if the top bumper is being held down  
             intake.move(127);                                   // out-take
