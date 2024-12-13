@@ -123,6 +123,8 @@ void printMenu(){
         if(menu.enableAuton){
             autonID = checkPressedAuton(menu, screen::touch_status().x, screen::touch_status().y);
         }
+
+        ctrl.print(0,0, "x:%.1f", getXDisplacement());
         delay(250); // save computer resources
     }
 }
@@ -203,7 +205,7 @@ void ladyBrownRoutine() {
  * This is an example autonomous routine which demonstrates a lot of the features LemLib has to offer
  */
 void autonomous() {
-  chassis.swingToHeading(90, DriveSide::LEFT, 2000, {.direction = AngularDirection::CW_CLOCKWISE});
+  chassis.swingToHeading(90, DriveSide::LEFT, 1000, {.direction = AngularDirection::CW_CLOCKWISE});
   chassis.waitUntilDone();
   intake.move(-127);
   delay(500);
@@ -215,11 +217,16 @@ void autonomous() {
   autonFunc.release = 0;
   chassis.moveToPoint(21, 24, 1250, {.forwards = false, .minSpeed = -31.75});
   chassis.waitUntilDone();
-  chassis.turnToHeading(-326, 1000);
+  chassis.turnToHeading(326, 2250, {.direction = AngularDirection::CCW_COUNTERCLOCKWISE});
   chassis.waitUntilDone();
   intake.move_voltage(-12000);
-  chassis.moveToPose(31.75, 36.75, 416.87, 3000, {.forwards = true, .maxSpeed = 63.5});
-  //chassis.setPose();
+  chassis.turnToHeading(355.45, 1500, {.direction = AngularDirection::CCW_COUNTERCLOCKWISE});
+  chassis.waitUntilDone();
+  chassis.moveToPoint(18, 33.2, 2000, {.forwards = true, .minSpeed = 0});
+  chassis.waitUntilDone();
+  chassis.moveToPose(18, 2, 180, 2000, {.forwards = true, .maxSpeed = 63.5, .minSpeed = -63.5});
+  chassis.waitUntilDone();
+  intake.brake();
   
   // Switch conditional statement to choose from any of the 10 scenarios
   switch (autonID){
@@ -265,6 +272,7 @@ void autonomous() {
       break;
   }
 }
+
 /**
  * Runs in driver control
  */

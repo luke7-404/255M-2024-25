@@ -22,6 +22,13 @@ Auton_Functions::Auton_Functions(lemlib::Chassis& drive, ADIPneumatics& intakeRa
     std::cout << "Auton Func obj created and chassis obj passed" << std::endl;
 }
 
+
+//! RED FUNCTIONS
+
+void Auton_Functions::RED_Auton::Skills(){
+  
+}
+
 void Auton_Functions::RED_Auton::AWP1(){
   
 }
@@ -30,10 +37,33 @@ void Auton_Functions::RED_Auton::AWP2(){
 
 }
 
+void Auton_Functions::RED_Auton::goalRush(){
+  
+}
+
+void Auton_Functions::RED_Auton::ringRush(){
+
+}
+
+
+//? BLUE FUNCTIONS
+
+void Auton_Functions::BLUE_Auton::Skills(){
+  
+}
+
 void Auton_Functions::BLUE_Auton::AWP1(){
   
 }
 
 void Auton_Functions::BLUE_Auton::AWP2(){
-    
+
+}
+
+void Auton_Functions::BLUE_Auton::goalRush(){
+  
+}
+
+void Auton_Functions::BLUE_Auton::ringRush(){
+
 }

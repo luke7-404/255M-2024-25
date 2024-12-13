@@ -33,7 +33,7 @@ void positionRobot(char autonID){
       break; // END CASE
 
     case '2': // RED AWP 1
-        startX = 0; // Our desired starting X position (inches)
+        startX = 12.8; // Our desired starting X position (inches)
         startY = 0; // Our desired starting Y position (inches)
         isRight = false; // Are we starting on the left (False) or right (True) side of the field
       break; // END CASE
