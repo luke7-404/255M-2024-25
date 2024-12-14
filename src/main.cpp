@@ -205,70 +205,50 @@ void ladyBrownRoutine() {
  * This is an example autonomous routine which demonstrates a lot of the features LemLib has to offer
  */
 void autonomous() {
-  chassis.swingToHeading(90, DriveSide::LEFT, 1000, {.direction = AngularDirection::CW_CLOCKWISE});
-  chassis.waitUntilDone();
-  intake.move(-127);
-  delay(500);
-  intake.brake();
-  chassis.moveToPose(11.0, 14, 58.25, 2500);
-  chassis.waitUntilDone();
-  chassis.turnToHeading(233.5, 2500);
-  chassis.waitUntilDone();
-  autonFunc.release = 0;
-  chassis.moveToPoint(21, 24, 1250, {.forwards = false, .minSpeed = -31.75});
-  chassis.waitUntilDone();
-  chassis.turnToHeading(326, 2250, {.direction = AngularDirection::CCW_COUNTERCLOCKWISE});
-  chassis.waitUntilDone();
-  intake.move_voltage(-12000);
-  chassis.turnToHeading(355.45, 1500, {.direction = AngularDirection::CCW_COUNTERCLOCKWISE});
-  chassis.waitUntilDone();
-  chassis.moveToPoint(18, 33.2, 2000, {.forwards = true, .minSpeed = 0});
-  chassis.waitUntilDone();
-  chassis.moveToPose(18, 2, 180, 2000, {.forwards = true, .maxSpeed = 63.5, .minSpeed = -63.5});
-  chassis.waitUntilDone();
-  intake.brake();
+  
+
   
   // Switch conditional statement to choose from any of the 10 scenarios
   switch (autonID){
     
     case '1': // RED SKILLS
-        Auton_Functions::RED_Auton().Skills();
+        Auton_Functions::RED_Auton(autonFunc).Skills();
         break;
 
     case 'A': // BLUE SKILLS
-        Auton_Functions::BLUE_Auton().Skills();
+        Auton_Functions::BLUE_Auton(autonFunc).Skills();
         break;
 
     case '2': // RED AWP 1
-        Auton_Functions::RED_Auton().AWP1();
+        Auton_Functions::RED_Auton(autonFunc).AWP1();
         break;
 
     case 'B': // BLUE AWP 1
-        Auton_Functions::BLUE_Auton().AWP1();
+        Auton_Functions::BLUE_Auton(autonFunc).AWP1();
         break;
 
     case '3': // RED AWP 2
-        Auton_Functions::RED_Auton().AWP2();
+        Auton_Functions::RED_Auton(autonFunc).AWP2();
         break;
 
     case 'C': // BLUE AWP 2
-        Auton_Functions::BLUE_Auton().AWP2();
+        Auton_Functions::BLUE_Auton(autonFunc).AWP2();
         break;
 
     case '4': // RED Goal Rush 
-        Auton_Functions::RED_Auton().goalRush();
+        Auton_Functions::RED_Auton(autonFunc).goalRush();
       break;
 
     case 'D': // BLUE Goal Rush 
-        Auton_Functions::BLUE_Auton().goalRush();
+        Auton_Functions::BLUE_Auton(autonFunc).goalRush();
       break;
 
     case '5': // RED Ring Rush
-        Auton_Functions::RED_Auton().ringRush();
+        Auton_Functions::RED_Auton(autonFunc).ringRush();
       break;
 
     case 'E': // BLUE Ring Rush
-        Auton_Functions::BLUE_Auton().ringRush();
+        Auton_Functions::BLUE_Auton(autonFunc).ringRush();
       break;
   }
 }

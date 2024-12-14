@@ -20,19 +20,25 @@ class Auton_Functions{
         static std::int8_t release;
 
         struct RED_Auton {
-            void AWP1();
-            void AWP2();
-            void Skills();
-            void goalRush();
-            void ringRush();
+                RED_Auton(Auton_Functions& parent) : parent(parent){}
+                void AWP1();
+                void AWP2();
+                void Skills();
+                void goalRush();
+                void ringRush();
+            private:
+                Auton_Functions& parent;
         };
 
         struct BLUE_Auton {
-            void AWP1();
-            void AWP2();
-            void Skills();
-            void goalRush();
-            void ringRush();
+                BLUE_Auton(Auton_Functions& parent) : parent(parent){}
+                void AWP1();
+                void AWP2();
+                void Skills();
+                void goalRush();
+                void ringRush();
+            private:
+                Auton_Functions& parent;
         };
         
         

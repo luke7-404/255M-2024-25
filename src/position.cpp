@@ -39,21 +39,21 @@ void positionRobot(char autonID){
       break; // END CASE
 
     case 'B': // BLUE AWP 1
-        startX = 0; // Our desired starting X position (inches)
+        startX = 12.8; // Our desired starting X position (inches)
         startY = 0; // Our desired starting Y position (inches)
         isRight = false; // Are we starting on the left (False) or right (True) side of the field
       break; // END CASE
 
     case '3': // RED AWP 2 
-        startX = 0; // Our desired starting X position (inches)
+        startX = 12.0; // Our desired starting X position (inches)
         startY = 0; // Our desired starting Y position (inches)
-        isRight = false; // Are we starting on the left (False) or right (True) side of the field
+        isRight = true; // Are we starting on the left (False) or right (True) side of the field
       break; // END CASE
 
     case 'C': // BLUE AWP 2 
-        startX = 0; // Our desired starting X position (inches)
+        startX = 12.0; // Our desired starting X position (inches)
         startY = 0; // Our desired starting Y position (inches)
-        isRight = false; // Are we starting on the left (False) or right (True) side of the field
+        isRight = true; // Are we starting on the left (False) or right (True) side of the field
       break; // END CASE
 
     case '4': // RED Goal Rush 
@@ -94,7 +94,7 @@ void positionRobot(char autonID){
 
 // Function to calculate the X displacement of the robot
 float getXDisplacement() {
-  return (isRight ? 144 - cmToInches(sonarRight.get_value() / 10) // Use right sensor if isRight
+  return (isRight ? cmToInches(sonarRight.get_value() / 10) // Use right sensor if isRight
                   : cmToInches(sonarLeft.get_value() / 10) // Use left sensor otherwise
           ) + 7.25; // Add to the selected value offset
 }
