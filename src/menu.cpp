@@ -8,8 +8,9 @@ bool LCD_Menu::isBlue = false; // Set auton Screen as default
 bool LCD_Menu::isDeconstructed = false; // Set the object as not destroyed
 
 // Constructor
-LCD_Menu::LCD_Menu(){
+LCD_Menu::LCD_Menu(std::vector<std::reference_wrapper<pros::AbstractMotor>> &motorArray) {
   cout << "LCD Menu Object was created" << endl; // Show that the object was created
+  this->motors = motorArray;
   LCD::set_pen(pros::Color::white);
   LCD::set_eraser(BLUE);
 }
@@ -35,7 +36,7 @@ void LCD_Menu::makeButtons(){
   LCD::draw_line(192, 0, 192, 25.5); // Draw a divider line
   LCD::print(pros::text_format_e_t::E_TEXT_MEDIUM, 211.25, 7.5, "System"); // Prints Odom in the middle of the lines
   LCD::draw_line(288, 0, 288, 25.5); // Draw a divider line
-  LCD::print(pros::text_format_e_t::E_TEXT_MEDIUM, 298, 7.5, "Odom/PID"); // Prints PID in the middle of the lines
+  LCD::print(pros::text_format_e_t::E_TEXT_MEDIUM, 301, 7.5, "Position"); // Prints PID in the middle of the lines
   LCD::draw_line(384, 0, 384, 25.5); // Draw a divider line
   LCD::print(pros::text_format_e_t::E_TEXT_MEDIUM, 411.5, 7.5, "Data"); // Prints Files in the middle of the lines
   LCD::draw_line(479, 0, 479, 25.5); // Draw a divider line
@@ -128,96 +129,69 @@ void LCD_Menu::printAuton(pros::Color color, std::vector<char> autoNum){
 /* 
   A function that will iterate through an array of type motor and print the motors and multiple attributes of them
 */  
-/*void LCD_Menu::listMotors(uint16_t start_X, uint16_t start_Y){
-  LCD.drawRectangle(start_X-5, start_Y-17, 398, 162); // Draws a surrounding box for the area
+void LCD_Menu::listMotors(uint16_t start_X, uint16_t start_Y){
+  LCD::set_pen(pros::Color::black);
+  LCD::draw_rect(start_X-5, start_Y-17, 398, 162); // Draws a surrounding box for the area
+  LCD::set_pen(pros::Color::white);
 
-  // Iterates through the Motor array
-  for (short i = 0; i < 8; i++) {
-    if(i == 7) break;
-    // Print Statement
-    /*
-      The format:
+  for (auto &motorRef : this->motors) { // Iterates through all of the motor devices in the array
+    auto &motor = motorRef.get();
+    // Per device in each motor device, access data
+    for (short i = 0; i < motor.get_port_all().size(); i++)
+    {
+      // Print Statement
+      /*
+        The format:
 
-      Motor(PORT#): Temp#, Voltage#, Current#, Torx#, Effic.#
+        Motor(PORT#): Temp#, Voltage#, Torx#, Effic.#
+      */
+      LCD::print(pros::text_format_e_t::E_TEXT_MEDIUM, start_X, start_Y, // Size and position of text
+                  "Motor%d: %.1f, %.2f, %.2f, %.2f", // Text to print
+                    motor.get_port_all()[i], motor.get_temperature_all()[i], // port value and motor temperature
+                    motor.get_voltage_all()[i] * 1000.0, // motor voltage (converted from millivolts to volts)
+                    motor.get_torque_all()[i], // motor voltage
+                    motor.get_efficiency_all()[i] // motor efficiency
+      );
+
+      start_Y += 20; // Shifts to the next line down
+    }
     
-    LCD.printAt(start_X, start_Y, false, "Motor%d: %.1f, %.2f, %.2f, %.2f, %.2f", 
-    MotorList[i].index()+1, MotorList[i].temperature(celsius), MotorList[i].voltage(volt), 
-    MotorList[i].current(amp), MotorList[i].torque(), MotorList[i].efficiency(pct));
-
-    start_Y += 20; // Shifts to the next line down
   }
-}*/
+
+}
 
 // Prints out system information like motor diagnostics and battery %
-/*void LCD_Menu::printSystem(){
+void LCD_Menu::printSystem(){
   
-  /* Static Elements
+  //Static Elements
   this->screenClear(); // Clears the screen
-  LCD.printAt(30,60, false, "Motors: Temp, Volt, Current, Torx, Effic."); // Prints out the format for the Motor List
 
-  /* Elements Need to Update 
+  // Prints out the format for the Motor List
+  LCD::print(pros::text_format_e_t::E_TEXT_MEDIUM, 30, 60, "Motors: Temp, Volt, Current, Torx, Effic."); 
 
-  // Prints out battery information and if an SD_Card is inserted
-  LCD.printAt(70, 42, false, "Battery:%d Battery_Voltage:%.3f", Brain.Battery.capacity(), Brain.Battery.voltage());
+  /* Elements Need to Update */
+
+  // Prints out battery information
+  LCD::print(pros::text_format_e_t::E_TEXT_MEDIUM, 70, 42, "Battery:%.1f Battery_Voltage:%.1f", 
+                                                            pros::battery::get_capacity(), pros::battery::get_voltage());
   
   // Calls the listMotors function
   this->listMotors(39, 83);
-}*/
+}
 
 // Prints out a picture of the vex field with odometry debugging
-void LCD_Menu::printOdom(float x, float y, float heading){
+void LCD_Menu::printPose(float x, float y, float heading){
   this->screenClear(); // Clears screen
   LCD::set_eraser(BLUE);
   LCD::print(pros::E_TEXT_LARGE, 30, 68, "X(in.):%.2f", x); // Prints the X position from Odometry
   LCD::print(pros::E_TEXT_LARGE, 30, 98, "Y(in.):%.2f", y); // Prints the Y position from Odometry
   LCD::print(pros::E_TEXT_LARGE, 30, 128, "Angle(deg):%.2f", heading); // Prints the angle position from Odometry
-  
-  // Prints the rotation encoder position
-  //LCD::print(pros::E_TEXT_MEDIUM, 30, 156, "X-Track:%.2f", xTrack);
-  //LCD::print(pros::E_TEXT_MEDIUM, 30, 176, "Y-Track:%.2f", yTrack);
-}
-/*
-// construct panel/ rotational indicator
-panel turnPanel(80, 41, 48, 0, 360);
-
-// Prints out debugging information for PID
-void LCD_Menu::printPID(PID_Data &drive, float heading){
-  this->screenClear(); // Clears screen
-  
-  LCD.setPenWidth(4); // Makes the width of shapes bolder
-
-  // Rotational circle indicator
-  turnPanel.set_panel_data(heading); // add data too indicator
-  turnPanel.set_data_label_enable(false); // turn off indicator text
-  turnPanel.set_background_color(000,000,000); //fix GUI colors
-  turnPanel.display(); // print the indicator
-
-  // Lateral arrow indicator
-  LCD::draw_line(396, 78, 430, 89); // Top line
-  LCD::draw_line(280, 89, 430, 89); // Middle line
-  LCD::draw_line(396, 100, 430, 89); // Bottom line
-
-  LCD.setPenWidth(1); // Resets the pen width
-
-  /* Elements that need to be updated 
-
-  // Prints the Rotational information
-  LCD.printAt(41, 163, false, "Heading(DEG): %.2f", heading);
-  LCD.printAt(66, 182, false, "T Error: %.2f", drive.turn_Error);
-  LCD.printAt(66, 201, false, "T Integ: %.2f", drive.turn_Integral);
-  LCD.printAt(66, 221, false, "T Deriv: %.2f", drive.turn_Derivative);
-  
-  // Prints the Lateral information
-  //LCD.printAt(275, 163, false, "Direction");
-  LCD.printAt(295, 182, false, "Error: %.2f", drive.error);
-  LCD.printAt(295, 201, false, "Integ: %.4f", drive.integral);
-  LCD.printAt(295, 221, false, "Deriv: %.2f", drive.derivative);
 }
 
 
 // Shows file information
 
-void LCD_Menu::printFile(data_File &Data){
+/*void LCD_Menu::printFile(data_File &Data){
   this->screenClear(); // Clears screen
 
   LCD.printAt(145, 50, false, "0 = false; 1 = true");
@@ -236,7 +210,7 @@ void LCD_Menu::printFile(data_File &Data){
 
 char checkout; // Helper variable that holds values for the return statement
 
-void checkPressedTab(int32_t pressed_X,LCD_Menu& Menu, lemlib::Chassis& chassis){
+void checkPressedTab(int32_t pressed_X, LCD_Menu& Menu, lemlib::Chassis& chassis){
   Menu.enableAuton = false; // Toggles auton buttons functionality to on
   Menu.isBlue = false;
   //Menu.enableFile = false; // Toggles file buttons functionality to off
@@ -254,14 +228,13 @@ void checkPressedTab(int32_t pressed_X,LCD_Menu& Menu, lemlib::Chassis& chassis)
     Menu.printAuton(pros::Color::blue, {'A', 'B', 'C', 'D', 'E'});
 
   } else if (pressed_X > 192 && pressed_X <= 288) {
-    // Prints the Odometry information page
-    //Menu.printOdom(Odom.xPosGlobal, Odom.yPosGlobal, Odom.currentTheta);
+    // Prints the system information page
+    Menu.printSystem();
     //Menu.enableFile = false; // Toggles file buttons functionality to off
     Menu.enableAuton = false; // Toggles auton buttons functionality to off
 
   } else if (pressed_X > 288 && pressed_X <= 384) {
-    Menu.printOdom(chassis.getPose().x, chassis.getPose().y, chassis.getPose().theta);
-    //Menu.printPID(PID, reduce_0_to_360(Inert.rotation(rotationUnits::deg)) ); // Prints the PID information page
+    Menu.printPose(chassis.getPose().x, chassis.getPose().y, chassis.getPose().theta);
     //Menu.enableFile = false; // Toggles file buttons functionality to off
     Menu.enableAuton = false; // Toggles auton buttons functionality to off
 
@@ -321,9 +294,7 @@ char checkPressedAuton(LCD_Menu &Menu, int16_t pressed_X, int16_t pressed_Y){
   } else return 0;
   
   // Return the ASCII representation of the char
-  checkout = Menu.isBlue ? static_cast<char>(checkout+64) : static_cast<char>(checkout+48);
-  positionRobot(checkout);
-  return checkout; 
+  return Menu.isBlue ? (checkout+64) : (checkout+48); 
 }
 
 // Checks if a pressed x and y value is where the emphasized button is

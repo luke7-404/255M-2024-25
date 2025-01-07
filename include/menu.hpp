@@ -1,14 +1,12 @@
+// Include dependencies
+    #include "lemlib/api.hpp" // IWYU pragma: keep
+    #include "main.h"
+    #include "file_collect.hpp"
 
 // Add definition guards
 #pragma once
 #ifndef PRINTING_HPP_ // If the header file has not been defined
 #define PRINTING_HPP_ // Define the header file
-
-    // Include dependencies
-    #include "position.hpp"
-    #include "lemlib/api.hpp" // IWYU pragma: keep
-
-    
     
     // Define commonalities
     #define LCD pros::screen // Abbreviates Brain.Screen to just LCD
@@ -22,7 +20,7 @@
             /**
              * @brief Creates a new LCD_Menu object
             */
-            LCD_Menu();
+            LCD_Menu(std::vector<std::reference_wrapper<pros::AbstractMotor>> &motorArray);
             /**
              * @brief Destroys a LCD_Menu object
             */
@@ -33,9 +31,10 @@
             void printAuton(pros::Color color, std::vector<char> autoNum = {'1', '2', '3', '4', '5'});
             /**
              * @brief Prints out system information like motor diagnostics and battery %
+             * 
+             * @param motors an array that contains all of the devices used
             */
             void printSystem();
-            
             /**
              * @brief Prints out a picture of the vex field with odometry debugging
              * 
@@ -43,13 +42,8 @@
              * @param y     The current Y-coordinate that Odometry function outputs (In inches)
              * @param heading   The current angle heading that Odometry function outputs (In degrees)
             */
-            void printOdom(float x, float y, float heading);
-            /**
-             * @brief Prints out debugging information for PID
-             * @param drive The PID_Data object
-             * @param heading The current angle heading (In degrees)
+            void printPose(float x, float y, float heading);
             
-            void printPID(PID_Data &drive, float heading);
             /**
              * @brief Shows data analytics and file information
              * @param Data The data_File object
@@ -58,7 +52,7 @@
             */
             static bool enableAuton; // A logic variable for when viewing any auton screen 
             static bool isBlue; // A logic variable for when viewing the blue auton screen
-            //static bool enableFile; // A logic variable for when viewing the file screen
+            static bool enableFile; // A logic variable for when viewing the file screen
             static bool isDeconstructed; // When the class is destructed, the value will terminate the object's ability to print
 
         private:
@@ -96,7 +90,8 @@
              * @param start_Y2 The bottom right y-coordinate of the first box.
              */
             void makeAutonButtons(uint16_t start_X1, uint16_t start_Y1, uint16_t start_X2, uint16_t start_Y2);
-
+            
+            std::vector<std::reference_wrapper<pros::AbstractMotor>> motors;
     };
 
     /**
@@ -104,9 +99,7 @@
      * 
      * @param pressed_X The x-coordinate that was pressed
      * @param Menu pointer to the Menu object
-     * @param PID pointer to the PID object
-     * @param Odom pointer to the Odom object
-     * @param File pointer to the File object
+     * @param chassis pointer to the lemlib chassis object
     */
     extern void checkPressedTab(int32_t pressed_X,LCD_Menu& Menu, lemlib::Chassis& chassis);
 
@@ -128,5 +121,5 @@
      * @param pressed_X The X-coordinate that was pressed 
      * @param pressed_Y The Y-coordinate that was pressed
      */
-    //extern void checkPressedFile(data_File &Data, int16_t pressed_X, int16_t pressed_Y);
-#endif // End of header 
+    extern void checkPressedFile(data_File &Data, int16_t pressed_X, int16_t pressed_Y);
+#endif // End of header
