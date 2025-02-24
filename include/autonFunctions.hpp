@@ -97,9 +97,9 @@ class Auton_Functions{
          * @brief Represents the possible states of a robotic claw.
          * 
          * This enumeration defines three states for controlling a robotic claw:
-         * - OPEN: represented by the value 1.
-         * - CLOSE: represented by the value -1.
-         * - AUTO: represented by the value 0.
+         * - ALLIANCE_RED: represented by the value 1.
+         * - ALLIANCE_BLUE: represented by the value -1.
+         * - DISABLED: represented by the value 0.
          */
         enum teamColor {
             ALLIANCE_RED = 1, // The alliance color is red
@@ -108,9 +108,10 @@ class Auton_Functions{
         };
 
         /**
-         * @brief Sets the state of the claw mechanism.
+         * @brief Sets the color for the color sort function.
          *
-         * @param value The desired state to set the claw to, represented by the clawState enum.
+         * @param value The desired team color to set the sorter to look for.
+         * @param velo The velocity to set the intake to when the color is detected.
          */
         void setTeamColor(teamColor value, float velo = -127);
 
