@@ -7,8 +7,26 @@
 
 using namespace pros;
 
+// controller
+Controller ctrl(E_CONTROLLER_MASTER);
+
+// The first motor on the intake (5.5 motor)
+Motor firstStageIntake(-18, MotorGears::green);
+
+// The second motor on the intake (11 motor)
+Motor secondStageIntake(-7);
+
+// Ladybrown (5.5 motor)
+Motor ladyBrown(-12, MotorGears::green);
+
 // The distance sensor that detects the claw
 Distance clawDistance(17);
+
+Optical colorSensor(11);
+
+//Ladybrown sensors
+Rotation ladyLeftRot(19); // The ladybrown sensor on the left side
+Rotation ladyRightRot(16); // The ladybrown sensor on the right side
 
 /**
  * @class Auton_Functions
@@ -47,7 +65,7 @@ class Auton_Functions{
          * This function is designed to engage or release the clamp claw
          * based on predefined autonomous routines.
          */
-        void autoClampClaw();
+        void autoChecks();
 
         /**
          * @enum clawState
@@ -61,7 +79,7 @@ class Auton_Functions{
         enum clawState {
             OPEN = 1, // The claw is open
             CLOSE = -1, // The claw is closed
-            AUTO = 0 // The claw operates in automatic mode (based on sensor readings)
+            AUTO = 0, // The claw operates in automatic mode (based on sensor readings)
         };
 
         /**
@@ -70,6 +88,32 @@ class Auton_Functions{
          * @param value The desired state to set the claw to, represented by the clawState enum.
          */
         void setClawState(clawState value);
+
+        void toggleClaw(); // Toggles the claw between open and closed states
+
+        /**
+         * @enum clawState
+         * @brief Represents the possible states of a robotic claw.
+         * 
+         * This enumeration defines three states for controlling a robotic claw:
+         * - OPEN: represented by the value 1.
+         * - CLOSE: represented by the value -1.
+         * - AUTO: represented by the value 0.
+         */
+        enum teamColor {
+            ALLIANCE_RED = 1, // The alliance color is red
+            ALLIANCE_BLUE = -1, // The alliance color is red
+            DISABLED = 0 // The color sort is turned off
+        };
+
+        /**
+         * @brief Sets the state of the claw mechanism.
+         *
+         * @param value The desired state to set the claw to, represented by the clawState enum.
+         */
+        void setTeamColor(teamColor value, float velo = -127);
+
+        void toggleSort(); // Toggles the intake control between the sensor and manual control
 
         void AWP1(); // Left Side of field
         void AWP2(); // Right Side of field
@@ -147,54 +191,13 @@ class Auton_Functions{
         ADIPneumatics& doinker; // Reference to the ADIPneumatics object for controlling the doinker mechanism 
         MotorGroup& intake; // Reference to the MotorGroup object for controlling the intake motors
         static clawState release; // Static variable representing the state of the claw release mechanism
+        static teamColor select; // Static variable representing the team color that was selected
+        static float intakeVelocity; // Static variable representing the velocity of the intake mechanism
 };
 
+extern uint8_t stage; // The stage of the motion that LB is in (0 = at rest | 1 = ready for ring | 2 = in the air)
+extern void ladyBrownRoutine(); // Function for the ladybrown task
+extern double targetAngle; // variable for setting the target angle of the ladybrown
+extern bool detectedColor; // variable for detecting the color of the ring
 
-/**
- ** Defines various ABSOLUTE coordinate points and poses for a robotics field.
- * 
- * These macros represent specific locations on the field, including goals,
- * rings, and corners, for both the bottom left and bottom right sections.
- * Additional points are defined for middle and top sections, as well as
- * specific positions for red and blue wall stakes.
- * 
- * Each macro is defined with coordinates (x, y) and, where applicable, 
- * an orientation angle.
- * 
- * ! PERSPECTIVE FROM RED DRIVER BOX
- * ! (0,0) IS AT BOTTOM LEFT CORNER
- */
-
-#define bottomLeftGoal_POSE 48,24,180 
-#define bottomLeftRingA_POINT 48,48
-#define bottomLeftRingB_POINT 24,48
-#define bottomLeftRingC_POINT 24,24
-#define bottomLeftRingD_POINT 24,12
-#define bottomLeftRingE_POINT 12,24
-#define bottomLeftCorner_POSE 0,0,225
-
-#define bottomRightGoal_POSE 96,24,90
-#define bottomRightRingA_POINT 96,48
-#define bottomRightRingB_POINT 120,48
-#define bottomRightRingC_POINT 120,24
-#define bottomRightRingD_POINT 120,12
-#define bottomRightRingE_POINT 132,24
-#define bottomRightCorner_POSE 144,0,135
-
-#define middleLeftRing_POINT 12,72
-#define middleCenterRing_POINT 72,72
-#define middleCenterRing_POINT 132,72
-
-#define topMiddleGoal_POINT 72,120
-#define topRingA_POINT 120,96
-#define topRingB_POINT 48,96
-#define topRingC_POINT 24,96
-#define topRingD_POINT 24,120
-#define topRingE_POINT 120,120
-
-#define redWallStake_POSE 72,6,0
-#define blueWallStake_POSE 72,138,180
-#define blueWallStakeRing_POINT 96,96
-
-
-#endif
+#endif // AUTONFUNCTIONS_HPP
