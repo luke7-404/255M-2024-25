@@ -22,6 +22,7 @@ Motor ladyBrown(-12, MotorGears::green);
 // The distance sensor that detects the claw
 Distance clawDistance(17);
 
+// The color sensor that detects the color of the ring
 Optical colorSensor(11);
 
 //Ladybrown sensors
