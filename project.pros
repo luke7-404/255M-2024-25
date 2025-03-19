@@ -1,7 +1,7 @@
 {
   "py/object": "pros.conductor.project.Project",
   "py/state": {
-    "project_name": "255M",
+    "project_name": "SKILLS",
     "target": "v5",
     "templates": {
       "kernel": {
@@ -79,7 +79,9 @@
       }
     },
     "upload_options": {
-      "icon": "X"
+      "icon": "pros",
+      "description": "",
+      "slot": 2
     },
     "use_early_access": false
   }

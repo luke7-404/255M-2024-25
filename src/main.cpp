@@ -8,48 +8,37 @@
 
 using namespace pros;
 
-// controller
-Controller ctrl(E_CONTROLLER_MASTER);
-
-// Ladybrown (5.5 motor)
-Motor ladyBrown(12, MotorGears::green);
-
-Motor firstStageIntake(-14, MotorGears::green);
 
 //* Motor groups
 
 // left motor group (all reversed) - ports 10, 19, 20 
-MotorGroup leftMotors({-10, -19, -20}, MotorGearset::blue);
+MotorGroup leftMotors({-2, -6, -20}, MotorGearset::blue);
 // right motor group - ports 15, 16, 3  
-MotorGroup rightMotors({15, 16, 3}, MotorGearset::blue); 
+MotorGroup rightMotors({1, 10, 14}, MotorGearset::blue); 
 // intake motor group - ports 14 (reversed), 13
-MotorGroup intake({-14, 13});
+MotorGroup intake({-18, -7});
 
+// Vector to hold references to all motors
 std::vector<std::reference_wrapper<AbstractMotor>> motorArray = {ladyBrown, leftMotors, rightMotors, intake};
 
 //* PNEUMATICS
-adi::Pneumatics intakeRaiser('A', false);
-adi::Pneumatics mogoClaw('B', false);
+adi::Pneumatics mogoClaw('A', false);
+adi::Pneumatics intakeRaiser('B', false);
 adi::Pneumatics doinker('C', false);
 
 //* SENSORS
 
-//Ladybrown sensors
-Rotation ladyLeftRot(6); // The ladybrown sensor on the left side
-Rotation ladyRightRot(11); // The ladybrown sensor on the right side
-
 // Inertial Sensor on port 10
-Imu imu(9);
-
+Imu imu(21);
 
 // tracking wheels
 // horizontal tracking wheel encoder. Rotation sensor, port 7, not reversed
-Rotation horizontalEnc(7);
+Rotation horizontalEnc(-9);
 // vertical tracking wheel encoder. Rotation sensor, port 8, not reversed
-Rotation verticalEnc(8);
+Rotation verticalEnc(-15);
 
 // horizontal tracking wheel. 2.75" diameter, 5.75" offset, front of the robot (positive)
-lemlib::TrackingWheel horizontal(&horizontalEnc, 2.835, 2.25);
+lemlib::TrackingWheel horizontal(&horizontalEnc, 2.835, -2.25);
 // vertical tracking wheel. 2.75" diameter, 2.5" offset, left of the robot (negative)
 lemlib::TrackingWheel vertical(&verticalEnc, 2.835, 0);
 
@@ -91,7 +80,7 @@ lemlib::ControllerSettings angularController(1.5, // proportional gain (kP)
 // sensors for odometry
 lemlib::OdomSensors sensors(&vertical, // vertical tracking wheel
                             nullptr, // vertical tracking wheel 2, set to nullptr as we don't have a second one
-                            &horizontal, // horizontal tracking wheel
+                            nullptr /*&horizontal*/, // horizontal tracking wheel
                             nullptr, // horizontal tracking wheel 2, set to nullptr as we don't have a second one
                             &imu // inertial sensor
 );
@@ -111,29 +100,42 @@ lemlib::ExpoDriveCurve steerCurve(3, // joystick deadband out of 127
 // create the chassis
 lemlib::Chassis chassis(drivetrain, linearController, angularController, sensors, &throttleCurve, &steerCurve);
 
-// Create the screen object
-LCD_Menu menu(motorArray);
+// Create a data file object for storing and retrieving data
+file::data_File dataFile(&chassis, motorArray);
+
+// Create the screen object for the LCD menu
+LCD_Menu menu(&dataFile);
+
+// Create an object for autonomous functions
 Auton_Functions autonFunc(chassis, intakeRaiser, mogoClaw, doinker, intake);
+
+// Variable to store the autonomous routine ID
 char autonID;
 
 // void function that handles screen interactions
 void printMenu(){
     // while the menu object is able to function
     while(!menu.isDeconstructed){
-        // check if a tab was pressed
-        if(screen::touch_status().y <= 26) checkPressedTab(screen::touch_status().x, menu, chassis);
-        
-        // check if an auton button was pressed
-        if(menu.enableAuton){
-            autonID = checkPressedAuton(menu, screen::touch_status().x, screen::touch_status().y);
-        }
+        autonID = menu.getAutonID();
+        ctrl.print(0, 0, "ID: %c: %s", autonID, menu.getAutonName());
+        ctrl.clear_line(0);
         delay(250); // save computer resources
     }
 }
 
-// void function that handles calling the autoClampClaw function
-void autoClampHandler(){
-    autonFunc.autoClampClaw();
+// void function that handles calling the autoChecks function
+void autoHandler(){
+  autonFunc.autoChecks();
+}
+
+/**
+ * @brief Set the LB Sensors object
+ * 
+ * @param position the position to set the sensors to
+ */
+void setLB_Sensors(float position){
+  ladyLeftRot.set_position(position/ 0.01);
+  ladyRightRot.set_position(position/ 0.01);  
 }
 
 /**
@@ -147,10 +149,16 @@ void initialize() {
     chassis.calibrate(); 
     ladyLeftRot.reset();
     ladyRightRot.reset();
-    ladyLeftRot.set_position(0);
-    ladyRightRot.set_position(0);  
+    setLB_Sensors(0.0);
+    stage = 0;
+    colorSensor.set_led_pwm(100); // Set the color sensor LED brightness
+
+    // Create a background task for ladybrown
+    Task LB_task(ladyBrownRoutine);
+    Task autoClamp(autoHandler); // Create a background task for the autoCheck function
 
     // start tasks 
+    menu.init();
     Task printGUI(printMenu);
 }
 
@@ -164,190 +172,203 @@ void disabled() {}
  */
 void competition_initialize() {}
 
-// Make a PID object to use to output a voltage to the motor
-lemlib::PID PID_LB(0.21, 0, 0, 16, false);
-uint8_t stage = 0; // The stage of the motion that LB is in (0 = at rest | 1 = ready for ring | 2 = in the air)
-double avgPosition = 0.0; // Initialized variable that holds the avgPosition of the LadyBrown rotation sensors
-double targetAngle = 0.0; // Initialized variable that holds the desired position that the LadyBrown should be at
-
-// Function to execute the Lady Brown routine in an infinite loop
-void ladyBrownRoutine() {
-    
-    while (true) {
-        // Determine the target angle based on the current stage
-        switch (stage) {
-            case 1:
-                targetAngle = 29; // Set target angle for stage 1
-                break;
-            case 2:
-                targetAngle = 135.5; // Set target angle for stage 2
-                break;
-            default:
-                stage = 0; // Reset stage to initial
-                targetAngle = 0.2; // Set default target angle
-                break;
-        }
-
-        // Calculate the average position from two rotational sensors
-        double avgPosition = (ladyLeftRot.get_position() * 0.01 + ladyRightRot.get_position() * 0.01) / 2;
-
-        // Move the Lady Brown mechanism using a PID controller
-        // The movement command is scaled by 12.0
-        ladyBrown.move(PID_LB.update(targetAngle - avgPosition) * 12.0);
-
-        // Delay to control the loop execution frequency
-        delay(25);
-    }
-}
 
 /**
- * Runs during auto
- *
- * This is an example autonomous routine which demonstrates a lot of the features LemLib has to offer
+ * Runs during autonomous
  */
 void autonomous() {
-    chassis.setPose(0, 0, 0);
-    chassis.turnToHeading(90, 5000);
-    chassis.waitUntilDone();
-    chassis.turnToHeading(270, 5000);
 
+  setLB_Sensors(24); 
+  stage = 1;
 
-    Task autoClamp(autoClampHandler);
+  double g1x = 0; //8
+  double g1y = 0; // 3
 
-      chassis.setPose(48, 12, 180); // Starting Pose
-  
-  //TODO: Grab bottomLeftGoal and bottomLeftRingA
-  chassis.moveToPose(bottomLeftGoal_POSE, 1250, {.forwards = false, .minSpeed = -63.5});
-  delay(100);
+  stage = 2; // Alliance wall stake
+  delay(500);
+  autonFunc.setTeamColor(Auton_Functions::DISABLED); // turn off color sensor
+  chassis.setBrakeMode(E_MOTOR_BRAKE_HOLD); // Set the brake mode to hold
+  chassis.moveToPoint(0, -5, 500, {.forwards = false, .maxSpeed = 127, .minSpeed = 40});
+  chassis.turnToHeading(-90, 500);
   autonFunc.setClawState(Auton_Functions::AUTO);
-  delay(300);
+  chassis.moveToPoint(18.7, -10.5, 650, {.forwards = false, .minSpeed = 30}); // grab goal
+  stage = 3;
+  chassis.waitUntilDone();
+  chassis.turnToHeading(-175.85, 300);
+  chassis.waitUntilDone();
+  chassis.moveToPose(20-g1x,-30.56+g1y, -179, 1500, {.minSpeed = 40}, false); // tune #1 First ring // 20 // 17
   intake.move(-127);
-  chassis.waitUntilDone();
-  chassis.turnToHeading(19, 1000, {.direction = AngularDirection::CCW_COUNTERCLOCKWISE});
-  chassis.moveToPoint(bottomLeftRingA_POINT, 300);
-
-
-  //TODO: Grab bottomLeftRingB-E
-  chassis.waitUntilDone();
-  chassis.setPose(bottomLeftRingA_POINT, 0);
-  chassis.turnToHeading(-90, 750);
-  chassis.waitUntilDone();
-  chassis.moveToPoint(bottomLeftRingB_POINT, 1000);
-
-  chassis.turnToHeading(-190, 1000, {.direction = AngularDirection::CCW_COUNTERCLOCKWISE});
-  chassis.waitUntilDone();
-  chassis.setPose(bottomLeftRingB_POINT, 180);
-  chassis.moveToPoint(bottomLeftRingD_POINT, 1000, {.maxSpeed = 50}); // Gets rings C and D
-  chassis.waitUntilDone();
-  chassis.moveToPoint(bottomLeftRingB_POINT, 800, {.forwards = false, .minSpeed = -31.75});
-  chassis.waitUntilDone();
-  chassis.setPose(bottomLeftRingB_POINT, 180);
-  chassis.turnToPoint(bottomLeftRingE_POINT, 500);
-  chassis.moveToPoint(bottomLeftRingE_POINT, 750, {.maxSpeed = 45});
-
-  //TODO: Put goal in bottomLeftCorner
-  chassis.waitUntilDone();
-  chassis.turnToHeading(20, 600, {.direction = AngularDirection::CW_CLOCKWISE, .maxSpeed = 64});
-  chassis.moveToPoint(0, 0, 600, {.forwards = false, .minSpeed = -127});
-  delay(2250);
-  autonFunc.setClawState(Auton_Functions::OPEN);
-
-    // Make Blue and Red autonomous objects
-    Auton_Functions::BLUE_Auton Blue(autonFunc);
-    Auton_Functions::RED_Auton Red(autonFunc);
-    
-
-    //? Blue RR 1st half of AWP2 then go for middle rings than corner
-    //? Blue GR TBDT
-
-    //! RED GR TBDT
-    //! RED RR same as blue  
+  chassis.moveToPose(37-g1x, -77+g1y, -177.88, 2250, {.minSpeed = 50}, false); // tune #2 Second ring // 37 //34
+  delay(800);
+  chassis.turnToHeading(-353.45, 750, {.direction = AngularDirection::CCW_COUNTERCLOCKWISE}, false); // tune #3 turn to corner rings
   
-  // Switch conditional statement to choose from any of the 9 scenarios
-  switch (autonID){
-    
-    // SKILLS
-    case '1': // Flow through design because regardless if it is blue or red, the process is the same
-    case 'A':
-        autonFunc.Skills();
-        Blue.~BLUE_Auton(); // Since it is a general function destroy objects
-        Red.~RED_Auton();
-        break;
+  // g1y = 6;
 
-    // AWP 1
-    case '2': // Flow through design because regardless if it is blue or red, the process is the same
-    case 'B':
-        autonFunc.AWP1();
-        Blue.~BLUE_Auton(); // Since it is a general function destroy objects
-        Red.~RED_Auton();
-        break;
+  chassis.moveToPose(45.5-g1x, 6-g1y, -353, 4000, {.maxSpeed = 80, .minSpeed = 40}, false); // tune #4 get the three corner rings // 45.5
+  
+  // get the last corner ring
+  chassis.moveToPoint(42.1-g1x, -20-g1y, 1250, {.forwards = false, .minSpeed = 30}, false); // move back // 42.1
+  chassis.turnToHeading(-327, 400, {.direction = AngularDirection::CW_CLOCKWISE, .maxSpeed = 35}, false); // turn to ring
+  chassis.moveToPoint(49-g1x, -12-g1y, 1000, {.maxSpeed = 50}, false); // move to last ring // 49 // 
 
-    // AWP 2
-    case '3': // Flow through design because regardless if it is blue or red, the process is the same
-    case 'C':
-        autonFunc.AWP2();
-        Blue.~BLUE_Auton(); // Since it is a general function destroy objects
-        Red.~RED_Auton();
-        break;
+  // get in the corner
+  delay(500);
+  chassis.turnToHeading(-153, 500, {.direction = AngularDirection::CW_CLOCKWISE, .minSpeed = 30}, false); // turn to corner
+  
+  chassis.moveToPoint(57.72-g1x, 3-g1y, 1500, {.forwards = false, .maxSpeed = 70}, false); // push into corner
+  intake.brake(); // stop intake
+  autonFunc.setClawState(Auton_Functions::OPEN); // open claw
 
-    case '4': //! RED Goal Rush 
-        Blue.~BLUE_Auton(); // Destroy object since we aren't using it
-        Red.goalRush();
-      break;
 
-    case 'D': //? BLUE Goal Rush 
-        Red.~RED_Auton(); // Destroy object since we aren't using it
-        Blue.goalRush();
-      break;
+  // get second goal
+  chassis.waitUntilDone();
+  delay(1000);
 
-    case '5': //! RED Ring Rush
-        Blue.~BLUE_Auton(); // Destroy object since we aren't using it
-        Red.ringRush();
-      break;
+  
+  chassis.turnToHeading(-117, 300, {}, false); // turn to middle 
+  chassis.moveToPose(6-g1x, -5-g1y, -88, 5000, {.lead = 0.6, .minSpeed = 30}, false); // move to middle
+  autonFunc.setClawState(Auton_Functions::AUTO); // set claw to auto
 
-    case 'E': //? BLUE Ring Rush
-        Red.~RED_Auton(); // Destroy object since we aren't using it
-        Blue.ringRush();
-      break;
-    default: // If nothing ran destroy objects
-        Blue.~BLUE_Auton();
-        Red.~RED_Auton();
-      break;
-  }
+  double g2 = 1.5;
+
+  chassis.turnToHeading(90, 500, {}, false); // turn to goal
+  chassis.moveToPoint(g2-20, -6, 1000, {.forwards = false, .maxSpeed = 60}, false);
+  // chassis.moveToPose(g2-22, -4, 90, 7500, {.forwards = false, .lead = 0.15, .minSpeed = 40}, false); // push into goal
+
+  // get the first ring of the second goal
+  delay(500); 
+  chassis.turnToHeading(177, 500, {.minSpeed = 30}); // turn to first ring
+  chassis.waitUntilDone();
+  chassis.moveToPoint(g2-17.9, -17.3, 1000, {.minSpeed = 30}, false); // move to first ring
+  intake.move(-127); // intake ring
+  chassis.moveToPose(g2-39, -70, 177.88, 3500, {.minSpeed = 50}, false); // move to second ring
+  delay(800);
+  chassis.turnToHeading(353, 750, {.direction = AngularDirection::CW_CLOCKWISE}, false); // tune #3 turn to corner rings
+  chassis.moveToPose(g2-44.85, 6.5, 355.1, 15000, {.lead = 0.35, .maxSpeed = 80, .minSpeed = 40}, false); // tune #4 get the three corner rings
+  
+  // get the last corner ring
+  chassis.moveToPoint(g2-43.10, -18.75, 1000, {.forwards = false, .minSpeed = 30}, false); // move back
+  chassis.turnToHeading(321.32, 700, {.direction = AngularDirection::CCW_COUNTERCLOCKWISE, .minSpeed = 20}, false); // turn to ring
+  chassis.moveToPoint(g2-49, -12, 1000, {.maxSpeed = 50}, false); // move to last ring
+
+  // get in the corner
+  delay(500);
+  chassis.turnToHeading(153, 500, {.direction = AngularDirection::CCW_COUNTERCLOCKWISE, .minSpeed = 30}, false); // turn to corner
+  
+  chassis.moveToPoint(g2-58.25, 3, 1500, {.forwards = false, .maxSpeed = 70}, false); // push into corner
+  intake.brake(); // stop intake
+  autonFunc.setClawState(Auton_Functions::OPEN); // open claw
+
+  // Start third goal
+  delay(500);
+  chassis.waitUntilDone();
+  firstStageIntake.move(-127); // intake ring
+  chassis.moveToPoint(g2-2.35, -47, 3000, {.maxSpeed = 50}, false); // move to first ring
+  chassis.waitUntilDone();
+  delay(200);
+  secondStageIntake.move_relative(-650, -63); // move ring
+  delay(1000);
+
+  chassis.moveToPoint(28.5-g2, -71, 2500, {.maxSpeed = 70}, false); // move to second ring
+  chassis.waitUntilDone();
+  firstStageIntake.brake();
+  chassis.turnToHeading(43.95, 900, {}, false); // turn to goal
+  autonFunc.setClawState(Auton_Functions::AUTO); // set claw to auto
+
+  // TODO: TUNE GRAB
+  chassis.moveToPoint(2.08, -98.23, 1000, {.forwards = false, .maxSpeed = 60, .minSpeed = 30}, false); // push into goal
+  intake.move(-127);
+  delay(1000);
+  chassis.turnToHeading(-43.2, 500, {}, false); // turn to third ring
+  
+  // TODO: TUNE MOVE
+  chassis.moveToPoint(-8.7, -73.97, 1000, {.maxSpeed = 63.5}, false);
+  chassis.moveToPoint(-31.59, -45, 1300, {.maxSpeed = 63.5}, false); // move to third ring and set up for fourth and fifth 
+  chassis.turnToHeading(-176.67, 1000, {}, false);
+
+  autonFunc.setTeamColor(Auton_Functions::ALLIANCE_RED, -127); // Set the team color to red
+  chassis.moveToPoint(-36.58, -97.35, 2000, {.maxSpeed = 80}); // move to fourth and fifth ring 
+
+  // get the last corner ring
+  chassis.moveToPoint(g2-40.94, -87.9, 1000, {.forwards = false, .minSpeed = 30}, false); // move back
+  chassis.turnToHeading(-139.14, 700, {.minSpeed = 20}, false); // turn to ring
+  chassis.moveToPoint(g2-47.97, -94.24, 1000, {.maxSpeed = 50}, false); // move to last ring
+
+  // get in the corner
+  delay(750);
+  intake.brake();
+  firstStageIntake.move(-127);
+  chassis.moveToPoint(g2-51.72, -98.42, 500, {}, false); // hold blue
+  chassis.moveToPoint(g2-47.97, -94.24, 600, {.forwards = false}, false); // move back
+  chassis.turnToHeading(27.23, 500, {.minSpeed = 30}, false); // turn to corner
+  autonFunc.setClawState(Auton_Functions::OPEN);// open claw
+  chassis.moveToPoint(g2-57.23, -109.03, 2000, {.forwards = false, .minSpeed = 30}, false); // push into corner
+  intake.brake(); // stop intake
+
+  // Get fourth goal
+  delay(200);
+  chassis.turnToHeading(84.98, 500, {}, false);
+  intake.move(-127);
+  chassis.moveToPoint(g2-8.19, -99.81, 800, {.minSpeed = 15}, false); // push with intake
+  intake.move(127);
+  chassis.moveToPoint(17.94-g2, -108.15, 1750, {.minSpeed = 30}, false);
+  chassis.moveToPoint(53.79-g2, -120, 1000, {.minSpeed = 40}, false);
+  delay(150);
+  /*chassis.moveToPoint(32.68, -120.39, 500, {.forwards = false}, false);
+  chassis.turnToHeading(51.13, 500);
+  stage = 1;
+  intake.move(-127);
+  chassis.moveToPoint(46.98, -108.68, 500, {}, false);
+  chassis.moveToPoint(2.73, -110.88, 1000, {.forwards = false}, false);* /
+*/
+
 }
 
 /**
  * Runs in driver control
  */
 void opcontrol() {
+  bool macro = true;
+  stage = 3; // Set the stage to 3 to reset the LadyBrown
+  autonFunc.setTeamColor(Auton_Functions::DISABLED);
 
-    // Create a background task for ladybrown
-    Task LB_task(ladyBrownRoutine);
+  // controller
+  // loop to continuously update motors
+  while (true) {
+    // get joystick positions
+    int leftY = ctrl.get_analog(E_CONTROLLER_ANALOG_LEFT_Y);
+    int rightX = ctrl.get_analog(E_CONTROLLER_ANALOG_RIGHT_X);
+    // move the chassis with curvature drive
+    chassis.arcade(leftY, rightX);
 
-    // controller
-    // loop to continuously update motors
-    while (true) {
-        // get joystick positions
-        int leftY = ctrl.get_analog(E_CONTROLLER_ANALOG_LEFT_Y);
-        int rightX = ctrl.get_analog(E_CONTROLLER_ANALOG_RIGHT_X);
-        // move the chassis with curvature drive
-        chassis.arcade(leftY, rightX);
-
-        if (ctrl.get_digital(E_CONTROLLER_DIGITAL_L1)){         // if the top bumper is being held down  
-            intake.move_voltage(12000);                         // out-take
-        } else if (ctrl.get_digital(E_CONTROLLER_DIGITAL_L2)){  // if the bottom bumper is being held down
-            intake.move_voltage(-12000);                        // intake
-        } else if (ctrl.get_digital(E_CONTROLLER_DIGITAL_R1)) { // if the top right bumper is being held down
-            firstStageIntake.move(-127);                        // intake with the first stage
-        } else intake.brake();                                  // if all else, stop
-
-        //! CALL BACKS
-        if(ctrl.get_digital_new_press(E_CONTROLLER_DIGITAL_R2)) { stage++; } // Lady brown
-        if(ctrl.get_digital_new_press(E_CONTROLLER_DIGITAL_A)) { mogoClaw.toggle(); } // Mogo toggle
-        if(ctrl.get_digital_new_press(E_CONTROLLER_DIGITAL_B)) { doinker.toggle(); } // doinker toggle
-        if(ctrl.get_digital_new_press(E_CONTROLLER_DIGITAL_Y)) { intakeRaiser.toggle(); } // intake raiser toggle
-
-        // delay to save resources
-        delay(10);
+    if(!detectedColor) { // If the color sensor hasn't detected a color
+      if (ctrl.get_digital(E_CONTROLLER_DIGITAL_L1)){         // if the top bumper is being held down  
+          intake.move(127);                                   // out-take
+      } else if (ctrl.get_digital(E_CONTROLLER_DIGITAL_L2)){  // if the bottom bumper is being held down
+          intake.move(-127);                                  // intake
+      } else if (ctrl.get_digital(E_CONTROLLER_DIGITAL_R1)) { // if the top right bumper is being held down
+          firstStageIntake.move(-127);                        // intake with the first stage
+      } else intake.brake();                                  // if all else, stop
     }
+
+    //! CALL BACKS
+    if(ctrl.get_digital_new_press(E_CONTROLLER_DIGITAL_R2)) { stage++; } // Lady brown
+    if(ctrl.get_digital_new_press(E_CONTROLLER_DIGITAL_A)) { autonFunc.toggleClaw(); } // claw toggle
+    if(ctrl.get_digital_new_press(E_CONTROLLER_DIGITAL_B)) { doinker.toggle(); } // doinker toggle
+    if(ctrl.get_digital_new_press(E_CONTROLLER_DIGITAL_Y)) { intakeRaiser.toggle(); } // intake raiser toggle
+    if(ctrl.get_digital_new_press(E_CONTROLLER_DIGITAL_DOWN)) { autonFunc.toggleSort(); } // claw auto color sort toggle
+    if (ctrl.get_digital_new_press(E_CONTROLLER_DIGITAL_RIGHT) && macro) { // Macro for skills
+      chassis.setPose(0, 0, 0);
+      macro = false;
+      chassis.moveToPose(0, chassis.getPose().y-8, 0, 600, {}, false);
+      stage = 2;
+    }
+    if(ctrl.get_digital_new_press(E_CONTROLLER_DIGITAL_UP)) { // Lady brown for hang 
+      ladyBrown.set_brake_mode(motor_brake_mode_e::E_MOTOR_BRAKE_BRAKE);
+      stage = 4; 
+    } 
+
+    // delay to save resources
+    delay(10);
+  }
 }
