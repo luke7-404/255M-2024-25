@@ -1,7 +1,7 @@
 {
   "py/object": "pros.conductor.project.Project",
   "py/state": {
-    "project_name": "255M",
+    "project_name": "MATCH",
     "target": "v5",
     "templates": {
       "kernel": {
@@ -79,7 +79,9 @@
       }
     },
     "upload_options": {
-      "icon": "X"
+      "icon": "X",
+      "description": "",
+      "slot": 1
     },
     "use_early_access": false
   }

@@ -31,3 +31,5 @@ docs/_build
 docs/html
 docs/xml
 html
+.qodo/history.sqlite
+.gitignore
