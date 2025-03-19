@@ -1,6 +1,18 @@
-/.git
-/bin
-/build
+# Compiled Object files
+*.o
+*.obj
+
+# Executables
+*.bin
+*.elf
+
+# PROS
+bin/
+.vscode/
+.cache/
 compile_commands.json
-/.vscode
-/odom
+temp.log
+temp.errors
+*.ini
+.d/
+.qodo
