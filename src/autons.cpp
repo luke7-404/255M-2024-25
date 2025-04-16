@@ -1,5 +1,6 @@
 #include "main.h"
 
+using namespace pros;
 /////
 // For installation, upgrading, documentations, and tutorials, check out our website!
 // https://ez-robotics.github.io/EZ-Template/
@@ -15,9 +16,9 @@ const int SWING_SPEED = 110;
 ///
 void default_constants() {
   // P, I, D, and Start I
-  chassis.pid_drive_constants_set(20.0, 0.0, 100.0);         // Fwd/rev constants, used for odom and non odom motions
+  chassis.pid_drive_constants_set(19.9, 0.002, 100.0);         // Fwd/rev constants, used for odom and non odom motions
   chassis.pid_heading_constants_set(11.0, 0.0, 20.0);        // Holds the robot straight while going forward without odom
-  chassis.pid_turn_constants_set(3.0, 0.05, 20.0, 15.0);     // Turn in place constants
+  chassis.pid_turn_constants_set(3.9, 0.055, 20.25, 14.0);     // Turn in place constants
   chassis.pid_swing_constants_set(6.0, 0.0, 65.0);           // Swing constants
   chassis.pid_odom_angular_constants_set(6.5, 0.0, 52.5);    // Angular control for odom motions
   chassis.pid_odom_boomerang_constants_set(5.8, 0.0, 32.5);  // Angular control for boomerang motions
@@ -111,8 +112,8 @@ void wait_until_change_speed() {
   // pid_wait_until will wait until the robot gets to a desired position
 
   // When the robot gets to 6 inches slowly, the robot will travel the remaining distance at full speed
-  chassis.pid_drive_set(24_in, 30, true);
-  chassis.pid_wait_until(6_in);
+  chassis.pid_drive_set(48_in, 30, true);
+  chassis.pid_wait_until(24_in);
   chassis.pid_speed_max_set(DRIVE_SPEED);  // After driving 6 inches at 30 speed, the robot will go the remaining distance at DRIVE_SPEED
   chassis.pid_wait();
 
@@ -141,13 +142,13 @@ void swing_example() {
   // The third parameter is the speed of the moving side of the drive
   // The fourth parameter is the speed of the still side of the drive, this allows for wider arcs
 
-  chassis.pid_swing_set(ez::LEFT_SWING, 45_deg, SWING_SPEED, 45);
+  chassis.pid_swing_set(ez::LEFT_SWING, 90_deg, SWING_SPEED, 45);
   chassis.pid_wait();
 
   chassis.pid_swing_set(ez::RIGHT_SWING, 0_deg, SWING_SPEED, 45);
   chassis.pid_wait();
 
-  chassis.pid_swing_set(ez::RIGHT_SWING, 45_deg, SWING_SPEED, 45);
+  chassis.pid_swing_set(ez::RIGHT_SWING, 90_deg, SWING_SPEED, 45);
   chassis.pid_wait();
 
   chassis.pid_swing_set(ez::LEFT_SWING, 0_deg, SWING_SPEED, 45);
@@ -376,3 +377,153 @@ void measure_offsets() {
 // . . .
 // Make your own autonomous functions here!
 // . . .
+
+// Make a PID object to use to output a voltage to the motor
+ez::PID PID_LB(1.21, 1.21, 0, 0, "Lady Brown"); // Create a PID object for the Lady Brown mechanism
+uint8_t stage = 0; // The stage of the motion that LB is in (0 = at rest | 1 = ready for ring | 2 = in the air)
+double avgPosition = 0.0; // Initialized variable that holds the avgPosition of the LadyBrown rotation sensors
+double targetAngle = 0.0; // Initialized variable that holds the desired position that the LadyBrown should be at
+
+// Function to execute the Lady Brown routine in an infinite loop
+void ladyBrownRoutine() {
+    
+    while (true) {
+        // Determine the target angle based on the current stage 
+        switch (stage) {
+            case 1:
+                targetAngle = 60; // Set target angle for stage 1
+                break;
+            case 2:
+                targetAngle = 540; // Set target angle for stage 2
+                break;
+            case 4:
+                targetAngle = 660; // Set target angle for descore goal
+                break;
+            case 6:
+                targetAngle = 320+114; // Set target angle for descore wallstake
+                break;
+            case 8:
+                targetAngle = 360; // Set target angle for hang
+                break;
+            default:
+                stage = 0; // Reset stage to initial
+                targetAngle = 0; // Set default target angle
+                break;
+        }
+
+        // Calculate the average position from two rotational sensors
+        avgPosition = (ladyRot.get_position() / 100);
+
+        // ; // Compute the PID output based on the current position and target angle
+        // Move the Lady Brown mechanism using a PID controller
+        // The movement command is scaled by 12.0
+        ladyBrownMtr.move(PID_LB.compute_error(targetAngle-avgPosition,avgPosition));
+
+        // Delay to control the loop execution frequency
+        pros::delay(25);
+    }
+}
+
+Auton_Functions::clawState Auton_Functions::release = Auton_Functions::OPEN;
+Auton_Functions::teamColor Auton_Functions::select = Auton_Functions::DISABLED;
+Auton_Functions::teamColor Auton_Functions::oldColor = Auton_Functions::DISABLED;
+float Auton_Functions::intakeVelocity = 0.0;
+
+void Auton_Functions::autoChecks() {
+  this->setTeamColor(DISABLED);
+  while (true) {
+      
+    // If the claw state is OPEN, retract the claw.
+    if(this->release == OPEN) { mogoClaw.retract(); }
+    
+    // If the claw state is CLOSE, extend the claw.
+    else if(this->release == CLOSE) { mogoClaw.extend(); }
+
+    // If the distance is within a specific range, set the claw state to CLOSE.
+    else if(clawDistance.get_distance() <= 80){
+      this->release = CLOSE;
+    }
+
+    if(this->select == teamColor::ALLIANCE_RED){
+      if(colorSensor.get_hue() <= 254 && colorSensor.get_hue() >= 217){
+        detectedColor = true;
+        
+        pros::delay(55);
+        intake.move(-this->intakeVelocity);
+        pros::delay(50);
+        intake.move(this->intakeVelocity);
+          
+      } else detectedColor = false;
+    } else if(this->select == teamColor::ALLIANCE_BLUE){
+      if(colorSensor.get_hue() <= 18 && colorSensor.get_hue() >= 0){
+        detectedColor = true;
+        
+        pros::delay(55);
+        intake.move(-this->intakeVelocity);
+        pros::delay(50);
+        intake.move(this->intakeVelocity);
+
+      } else detectedColor = false;
+    } 
+
+    // Delay to prevent rapid state changes.
+    pros::delay(50);
+  }
+}
+
+void Auton_Functions::AWP1(){
+  stage = 2;
+  delay(1000);
+  chassis.pid_drive_set(-2_in, 75, true);
+  chassis.pid_drive_set(-15_in, DRIVE_SPEED, true);
+  chassis.pid_wait_until(-5_in);
+  stage = 3;
+  chassis.pid_wait_quick();
+  chassis.pid_turn_set(54_deg, TURN_SPEED);
+  chassis.pid_wait();
+  this->setClawState(AUTO);
+  chassis.pid_drive_set(-30_in, DRIVE_SPEED, true);
+  chassis.pid_wait_quick();
+  chassis.pid_turn_set(137_deg, 80);
+  chassis.pid_wait();
+  intake.move(127);
+  chassis.pid_drive_set(16_in, 75, true);
+  chassis.pid_wait();
+  chassis.pid_turn_set(85.5_deg, TURN_SPEED);
+  delay(350);
+  chassis.pid_drive_set(55_in, 90, true);
+  chassis.pid_wait_quick();
+  chassis.pid_drive_set(-6_in, 40, true);
+  chassis.pid_wait();
+  leftDoinker.extend(); // intakeRaiser.extend();
+  delay(1200); 
+  chassis.pid_drive_set(6_in, 70, true);
+  delay(500);
+  leftDoinker.retract(); // intakeRaiser.retract();
+  delay(400); 
+  chassis.pid_drive_set(-24_in, 50, true);
+  chassis.pid_wait_quick();
+  chassis.pid_turn_set(275_deg, TURN_SPEED);
+  chassis.pid_wait();
+  chassis.pid_drive_set(34_in, 50, true);
+  stage = 8;
+  chassis.pid_wait();
+}
+
+void Auton_Functions::AWP2(){
+  chassis.odom_theta_flip();
+  AWP1();
+}
+
+
+void Auton_Functions::Skills(){}
+void Auton_Functions::RED_Auton::goalRush(){
+  leftDoinker.extend(); // Extend the left doinker
+  chassis.pid_drive_set(42_in, DRIVE_SPEED, true); // Drive forward 36 inches at DRIVE_SPEED
+  chassis.pid_wait();
+  chassis.pid_drive_set(-24_in, DRIVE_SPEED, true); // Drive backward 12 inches at DRIVE_SPEED
+  chassis.pid_wait();
+}
+void Auton_Functions::RED_Auton::ringRush(){}
+void Auton_Functions::BLUE_Auton::goalRush(){}
+void Auton_Functions::BLUE_Auton::ringRush(){}
