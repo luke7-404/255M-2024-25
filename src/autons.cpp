@@ -391,7 +391,7 @@ void ladyBrownRoutine() {
         // Determine the target angle based on the current stage 
         switch (stage) {
             case 1:
-                targetAngle = 60; // Set target angle for stage 1
+                targetAngle = 44; // Set target angle for stage 1
                 break;
             case 2:
                 targetAngle = 540; // Set target angle for stage 2
@@ -414,10 +414,15 @@ void ladyBrownRoutine() {
         // Calculate the average position from two rotational sensors
         avgPosition = (ladyRot.get_position() / 100);
 
-        // ; // Compute the PID output based on the current position and target angle
-        // Move the Lady Brown mechanism using a PID controller
-        // The movement command is scaled by 12.0
-        ladyBrownMtr.move(PID_LB.compute_error(targetAngle-avgPosition,avgPosition));
+                  // Compute the PID output based on the current position and target angle
+          // Move the Lady Brown mechanism using a PID controller
+          // The movement command is scaled by 12.0
+          ladyBrownMtr.move(PID_LB.compute_error(targetAngle-avgPosition,avgPosition));
+        
+        if(fabs(PID_LB.error) < 2.75) { // If the error is less than 2.75 degrees, stop the motor
+          ladyBrownMtr.brake();
+        } 
+
 
         // Delay to control the loop execution frequency
         pros::delay(25);
@@ -427,7 +432,7 @@ void ladyBrownRoutine() {
 Auton_Functions::clawState Auton_Functions::release = Auton_Functions::OPEN;
 Auton_Functions::teamColor Auton_Functions::select = Auton_Functions::DISABLED;
 Auton_Functions::teamColor Auton_Functions::oldColor = Auton_Functions::DISABLED;
-float Auton_Functions::intakeVelocity = 0.0;
+float Auton_Functions::intakeVelocity = 127; // Default intake velocity
 
 void Auton_Functions::autoChecks() {
   this->setTeamColor(DISABLED);
@@ -471,6 +476,36 @@ void Auton_Functions::autoChecks() {
   }
 }
 
+void flipDoinker(pros::adi::Pneumatics& doinker) {
+  if (doinker.is_extended()) {
+    doinker.retract();
+  } else {
+    doinker.extend();
+  }
+}
+void Auton_Functions::useDoinker(){
+  if(chassis.odom_theta_direction_get()){
+    flipDoinker(rightDoinker);
+  } else {
+    flipDoinker(leftDoinker);
+  }
+}
+
+void Auton_Functions::getCornerRings(okapi::QLength dist, float speed, bool slew){
+  chassis.pid_drive_set(dist, speed, slew);
+  chassis.pid_wait_quick();
+  chassis.pid_drive_set(-6_in, 40, true);
+  chassis.pid_wait_quick();
+  intakeRaiser.extend();
+  delay(1200); 
+  chassis.pid_drive_set(6_in, 70, true);
+  delay(500);
+  intakeRaiser.retract();
+  delay(400); 
+  chassis.pid_drive_set(-24_in, 50, true);
+  chassis.pid_wait_quick();
+}
+
 void Auton_Functions::AWP1(){
   stage = 2;
   delay(1000);
@@ -491,18 +526,7 @@ void Auton_Functions::AWP1(){
   chassis.pid_wait();
   chassis.pid_turn_set(85.5_deg, TURN_SPEED);
   delay(350);
-  chassis.pid_drive_set(55_in, 90, true);
-  chassis.pid_wait_quick();
-  chassis.pid_drive_set(-6_in, 40, true);
-  chassis.pid_wait();
-  leftDoinker.extend(); // intakeRaiser.extend();
-  delay(1200); 
-  chassis.pid_drive_set(6_in, 70, true);
-  delay(500);
-  leftDoinker.retract(); // intakeRaiser.retract();
-  delay(400); 
-  chassis.pid_drive_set(-24_in, 50, true);
-  chassis.pid_wait_quick();
+  getCornerRings(55_in, 90, true);
   chassis.pid_turn_set(275_deg, TURN_SPEED);
   chassis.pid_wait();
   chassis.pid_drive_set(34_in, 50, true);
@@ -516,14 +540,217 @@ void Auton_Functions::AWP2(){
 }
 
 
-void Auton_Functions::Skills(){}
-void Auton_Functions::RED_Auton::goalRush(){
-  leftDoinker.extend(); // Extend the left doinker
-  chassis.pid_drive_set(42_in, DRIVE_SPEED, true); // Drive forward 36 inches at DRIVE_SPEED
+void Auton_Functions::Skills(){
+  // Wall Stake
+  stage = 2;
+  delay(900);
+  chassis.pid_drive_set(-7.5_in, 75);
   chassis.pid_wait();
-  chassis.pid_drive_set(-24_in, DRIVE_SPEED, true); // Drive backward 12 inches at DRIVE_SPEED
+  delay(300);
+  stage = 3;
+  chassis.pid_turn_set(-90_deg, TURN_SPEED);
+  chassis.pid_wait();
+
+
+  //First Corner
+  this->firstHalf_Corners();
+  chassis.pid_wait();
+  chassis.pid_swing_set(ez::LEFT_SWING,-95_deg,120,-15);
+  chassis.pid_drive_set(3.25_in, 100, true); //aligns itself
+  delay(100);
+  intake.brake();
+  chassis.pid_drive_set(55_in, DRIVE_SPEED,true);//drive to orgin
+  chassis.pid_wait();
+  chassis.pid_turn_set(90_deg, TURN_SPEED);
+  chassis.pid_wait();
+
+  /*chassis.pid_drive_set(9_in, DRIVE_SPEED,true);
+  delay(500);
+  chassis.pid_turn_set(-90_deg, TURN_SPEED); //turn to second mobile goal
+  delay(800);
+  chassis.pid_drive_set(56_in, DRIVE_SPEED,true); //drive to orgin
+  chassis.pid_wait();
+  chassis.pid_turn_set(75_deg, TURN_SPEED);
+  chassis.pid_wait();
+*/
+  // Move to reflection point
+  
+
+  //Second Corner
+  chassis.odom_theta_flip();
+  this->firstHalf_Corners();
+  //TODO: Finished with first half of the field, now we need to do the second half
   chassis.pid_wait();
 }
-void Auton_Functions::RED_Auton::ringRush(){}
-void Auton_Functions::BLUE_Auton::goalRush(){}
-void Auton_Functions::BLUE_Auton::ringRush(){}
+
+void wallStakeFunc(okapi::QLength dist, float speed, bool slew){
+  if(dist == 0_in){
+    dist = 13_in;
+    speed = 227;
+  } else {
+    chassis.pid_drive_set(dist, speed, slew);
+    chassis.pid_wait_quick();
+  }
+  delay(200);
+  intake.brake();
+  SecondStageIntake.move_relative(-100, -15);
+  delay(300);
+  stage = 2;
+  delay(700);
+  chassis.pid_drive_set(3_in - dist, fabs(100-speed), true);
+  chassis.pid_wait_quick();
+}
+
+void Auton_Functions::firstHalf_Corners(){
+  this->setClawState(AUTO);
+  chassis.pid_drive_set(-22.1_in ,DRIVE_SPEED,true);//to mobile goal
+  delay(950);
+  //chassis.pid_wait_quick();
+  chassis.pid_turn_set(180_deg, TURN_SPEED); //turn to ring
+  chassis.pid_wait();
+  intake.move(127); //starts intake
+  chassis.pid_drive_set(24.5_in, DRIVE_SPEED,true); //moves to first ring
+  chassis.pid_wait(); // put at the end of every movement
+  chassis.pid_turn_set(-201.5_deg,TURN_SPEED); //postions toward second ring
+  delay(500);
+  chassis.pid_wait();
+  chassis.pid_drive_set(51.5_in, 100,true); //goes to second ring
+  chassis.pid_wait();
+  delay(300);
+  chassis.pid_turn_set(0, TURN_SPEED); // 0's out
+  delay(300);
+  stage = 1; //gets ready for third ring
+  chassis.pid_drive_set(20.75_in,90,true); // moves to third ring
+  chassis.pid_wait();
+  intake.move(127);
+  chassis.pid_swing_set(ez::LEFT_SWING,90_deg,100,-40);//swing manuever
+  chassis.pid_turn_set(87.5_deg, TURN_SPEED); //turns to face wall stake
+
+  chassis.pid_wait();
+
+  wallStakeFunc(13_in, 45, true); //gets third ring scores it then moves backward
+  chassis.pid_wait();
+  stage = 3;
+  chassis.pid_wait();
+  chassis.pid_drive_set(-1.8_in,DRIVE_SPEED);//backs up from wall stake
+  chassis.pid_wait();
+  //chassis.pid_turn_set(0, TURN_SPEED); //faces toward 3 rings
+  chassis.pid_turn_set(5_deg, TURN_SPEED); //corrects angle
+  chassis.pid_wait();
+  intake.move(127);
+  chassis.pid_wait();
+  chassis.pid_drive_set(60.25_in,100,true);//moves to the 3 rings
+  chassis.pid_wait();
+  chassis.pid_drive_set(-14.5_in,70,true);//backs up into last ring
+  chassis.pid_wait();
+  chassis.pid_turn_set(90_deg, TURN_SPEED);
+  chassis.pid_wait();
+  chassis.pid_drive_set(11_in, 90, true); //moves to the last ring
+  chassis.pid_wait();
+  chassis.pid_swing_set(ez::LEFT_SWING,-160_deg,100,-40);
+  chassis.pid_wait();
+  chassis.pid_drive_set(-28_in, DRIVE_SPEED, true); //moves to corner
+  delay(600);
+  this->setClawState(OPEN);
+  delay(300);
+  chassis.pid_turn_set(-137.5_deg, TURN_SPEED);
+  chassis.pid_wait();
+
+  /*chassis.pid_drive_set(6_in, DRIVE_SPEED,true);
+  chassis.pid_wait();
+  
+  intake.brake();
+  stage = 2;
+  chassis.pid_wait();*/
+
+  // TO DROP GOAL
+  // this->setClawState(OPEN);
+
+}
+
+
+void Auton_Functions::RED_Auton::goalRush(){
+  chassis.drive_brake_set(E_MOTOR_BRAKE_COAST);
+  parent.useDoinker(); // Extend the left doinker
+  chassis.pid_drive_set(40_in, 127, true); // Drive forward 36 inches at DRIVE_SPEED
+  chassis.pid_wait();
+  chassis.drive_brake_set(E_MOTOR_BRAKE_HOLD);
+  chassis.pid_drive_set(-20_in, 50, true); // Drive backward 12 inches at DRIVE_SPEED
+  chassis.pid_wait();
+  parent.useDoinker();
+  delay(300);
+  chassis.pid_drive_set(-5_in, 30, true);
+  chassis.pid_wait_quick();
+  chassis.pid_swing_set(ez::RIGHT_SWING, -70_deg, 45, -15); // Swing left 90 degrees at TURN_SPEED
+  firstStageIntake.move_velocity(127); // Move the first stage intake at full speed
+  chassis.pid_wait();
+  chassis.pid_drive_set(7_in, 30, true); // Drive forward 5 inches at DRIVE_SPEED
+  chassis.pid_wait_quick();
+  chassis.pid_drive_set(-10_in, 50, true); // Drive backward 5 inches at DRIVE_SPEED
+  chassis.pid_wait();
+  chassis.pid_turn_set(-190_deg, 75); // Turn left 90 degrees at TURN_SPEED
+  chassis.pid_wait_quick();
+  parent.setClawState(AUTO); // Set the claw state to AUTO
+  chassis.pid_drive_set(-13_in, 70, true); // Drive backward 5 inches at DRIVE_SPEED
+  chassis.pid_wait();
+  /*SecondStageIntake.move_relative(500, 127);
+  chassis.pid_turn_set(-310_deg, 85); // Turn left 90 degrees at TURN_SPEED
+  chassis.pid_wait_quick();
+  // wallStakeFunc(10_in, 50, true); // Drive forward 5 inches at DRIVE_SPEED
+  /*intake.move(127);
+  parent.getCornerRings(55_in, 80, true); // Get corner rings
+  delay(500);
+  stage = 1;
+  intake.move(127);
+  chassis.pid_wait();*/
+}
+
+void Auton_Functions::RED_Auton::ringRush(){
+  //Start on line at a -22.7 deg angle
+  parent.useDoinker();
+  chassis.pid_drive_set(40, 127, true);
+  firstStageIntake.move(127);
+  delay(1000);
+
+  // check angle
+  chassis.pid_turn_set(-44, TURN_SPEED);
+  chassis.pid_wait_quick();
+  parent.setClawState(AUTO);
+  chassis.pid_drive_set(-25, 127, true);
+  
+  // check angle
+  delay(300);
+  parent.useDoinker();
+  delay(1000);
+  chassis.pid_swing_set(ez::RIGHT_SWING, -71.5_deg, 100, -50);
+  delay(800);
+  intake.move(127);
+  chassis.pid_drive_set(30, 75, true);
+  chassis.pid_wait_quick();
+  chassis.pid_swing_set(ez::RIGHT_SWING, -140_deg, 100, -50);
+  chassis.pid_wait_quick();
+
+  
+  // add end of awp for corner rings
+  parent.getCornerRings(40_in, 90, true); // go to corner rings
+
+  // go to start for preload
+  chassis.pid_turn_set(-233_deg, TURN_SPEED);
+  chassis.pid_wait_quick();
+  chassis.pid_drive_set(25, 127, true);
+  chassis.pid_wait_quick();
+}
+
+void Auton_Functions::RED_Auton::centerGS(){}
+
+
+void Auton_Functions::BLUE_Auton::centerGS(){}
+void Auton_Functions::BLUE_Auton::goalRush(){
+  
+}
+
+void Auton_Functions::BLUE_Auton::ringRush(){
+  chassis.odom_theta_flip();
+  
+  RED_Auton::ringRush();
+}

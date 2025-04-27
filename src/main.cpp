@@ -85,7 +85,7 @@ void initialize() {
   setLB_Sensor(0.0);
   stage = 0;
   colorSensor.set_led_pwm(100); // Set the color sensor LED brightness
-
+  ladyBrownMtr.set_brake_mode(MOTOR_BRAKE_HOLD); // Set the lady brown motor to hold mode
   // Create a background task for ladybrown
   pros::Task LB_task(ladyBrownRoutine);
   pros::Task autoClamp(autoHandler); // Create a background task for the autoCheck function
@@ -153,7 +153,8 @@ void autonomous() {
   Auton_Functions::RED_Auton Red(autonFunc);
   // delay(2000);  
 
-  autonID = '4';
+  autonID = 'A';
+  float x = 45.0; // Set the initial position of the lady brown sensor to 0.0
 
   // Switch conditional statement to choose from any of the 9 scenarios
   switch (autonID){
@@ -161,66 +162,84 @@ void autonomous() {
     // SKILLS
     case '1': // Flow through design because regardless if it is blue or red, the process is the same
     case 'A':
+        setLB_Sensor(x); 
+        stage = 1;
+        autonFunc.setTeamColor(Auton_Functions::ALLIANCE_RED); 
+        autonFunc.Skills();
         Blue.~BLUE_Auton(); // Since it is a general function destroy objects
         Red.~RED_Auton();
       break;
 
+    case '2': //! Center GS RED
+        autonFunc.setTeamColor(Auton_Functions::ALLIANCE_RED); // Set the team color to RED
+        Blue.~BLUE_Auton(); // Since it is a general function destroy objects
+        Red.centerGS();
+      break;
+
+    case 'B': //? Center GS RED
+        autonFunc.setTeamColor(Auton_Functions::ALLIANCE_BLUE); // Set the team color to BLUE
+        Red.~RED_Auton();
+        Blue.centerGS(); 
+      break;
+
     // AWP 1
-    case '2': // General Function for AWP1 but add the color sorting RED
-        setLB_Sensor(60); 
+    case '3': // General Function for AWP1 but add the color sorting RED
+        setLB_Sensor(x); 
         stage = 1;
-        autonFunc.setTeamColor(Auton_Functions::ALLIANCE_RED, -127); // Set the team color to RED
+        autonFunc.setTeamColor(Auton_Functions::ALLIANCE_RED); // Set the team color to RED
         autonFunc.AWP1();
         Blue.~BLUE_Auton(); // Since it is a general function destroy objects
         Red.~RED_Auton();
       break;
 
-    case 'B': // General Function for AWP1 but add the color sorting BLUE
-        setLB_Sensor(60); 
+    case 'C': // General Function for AWP1 but add the color sorting BLUE
+        setLB_Sensor(x); 
         stage = 1;
-        autonFunc.setTeamColor(Auton_Functions::ALLIANCE_BLUE, -127); // Set the team color to BLUE
+        autonFunc.setTeamColor(Auton_Functions::ALLIANCE_BLUE); // Set the team color to BLUE
         autonFunc.AWP1();
         Blue.~BLUE_Auton(); // Since it is a general function destroy objects
         Red.~RED_Auton();
       break;
 
     // AWP 2
-    case '3': // General Function for AWP2 but add the color sorting RED
-        setLB_Sensor(60); 
+    case '4': // General Function for AWP2 but add the color sorting RED
+        setLB_Sensor(x); 
         stage = 1;
-        autonFunc.setTeamColor(Auton_Functions::ALLIANCE_RED, -127); // Set the team color to RED
+        autonFunc.setTeamColor(Auton_Functions::ALLIANCE_RED); // Set the team color to RED
         autonFunc.AWP2();
         Blue.~BLUE_Auton(); // Since it is a general function destroy objects
         Red.~RED_Auton();
       break;
 
-    case 'C': // General Function for AWP2 but add the color sorting BLUE
-        setLB_Sensor(60); 
+    case 'D': // General Function for AWP2 but add the color sorting BLUE
+        setLB_Sensor(x); 
         stage = 1;
-        autonFunc.setTeamColor(Auton_Functions::ALLIANCE_BLUE, -127); // Set the team color to BLUE
+        autonFunc.setTeamColor(Auton_Functions::ALLIANCE_BLUE); // Set the team color to BLUE
         autonFunc.AWP2();
         Blue.~BLUE_Auton(); // Since it is a general function destroy objects
         Red.~RED_Auton();
       break;
 
-    case '4': //! RED Goal Rush 
-        autonFunc.setTeamColor(Auton_Functions::ALLIANCE_RED, -127); // Set the team color to RED    
+    case '5': //! RED Goal Rush 
+        autonFunc.setTeamColor(Auton_Functions::ALLIANCE_RED); // Set the team color to RED    
         Blue.~BLUE_Auton(); // Destroy object since we aren't using it
         Red.goalRush();
       break;
 
-    case 'D': //? BLUE Goal Rush 
+    case 'E': //? BLUE Goal Rush 
         autonFunc.setTeamColor(Auton_Functions::ALLIANCE_BLUE); // Set the team color to BLUE    
         Red.~RED_Auton(); // Destroy object since we aren't using it
         Blue.goalRush();
       break;
 
-    case '5': //! RED Ring Rush
+    case '6': //! RED Ring Rush
+        autonFunc.setTeamColor(Auton_Functions::ALLIANCE_RED); // Set the team color to RED    
         Blue.~BLUE_Auton(); // Destroy object since we aren't using it
         Red.ringRush();
       break;
 
-    case 'E': //? BLUE Ring Rush
+    case 'F': //? BLUE Ring Rush
+        autonFunc.setTeamColor(Auton_Functions::ALLIANCE_BLUE); // Set the team color to BLUE    
         Red.~RED_Auton(); // Destroy object since we aren't using it
         Blue.ringRush();
       break;
@@ -251,8 +270,8 @@ void ez_template_extras() {
     //  When enabled:
     //  * use A and Y to increment / decrement the constants
     //  * use the arrow keys to navigate the constants
-    if (master.get_digital_new_press(DIGITAL_X))
-      chassis.pid_tuner_toggle();
+    //if (master.get_digital_new_press(DIGITAL_X))
+      //chassis.pid_tuner_toggle();
 
     // Trigger the selected autonomous routine
     if (master.get_digital(DIGITAL_B) && master.get_digital(DIGITAL_DOWN)) {
@@ -292,8 +311,6 @@ void opcontrol() {
   stage = 3;
   autonFunc.setTeamColor(Auton_Functions::DISABLED);
 
-  if(pros::competition::is_connected()) menu.~LCD_Menu();
-
   while (true) {
     // Gives you some extras to make EZ-Template ezier
     ez_template_extras();
@@ -323,6 +340,13 @@ void opcontrol() {
     if(master.get_digital_new_press(DIGITAL_DOWN)) { stage = 4; } // tip goal
     
     if(master.get_digital_new_press(DIGITAL_LEFT)) { autonFunc.toggleSort(); } // toggle color sort
+    if(master.get_digital_new_press(DIGITAL_UP)) { 
+      chassis.pid_targets_reset();                // Resets PID targets to 0
+      chassis.drive_imu_reset();                  // Reset gyro position to 0
+      chassis.drive_sensor_reset();               // Reset drive sensors to 0
+      pros::delay(250);
+      wallStakeFunc(0_in,0, false); 
+    } // toggle color sort
 
     pros::delay(ez::util::DELAY_TIME);  // This is used for timer calculations!  Keep this ez::util::DELAY_TIME
   }

@@ -27,7 +27,7 @@ extern bool detectedColor; // variable for detecting the color of the ring
 // Initialize the detected color variable
 inline bool detectedColor = false;
 
-
+extern void wallStakeFunc(okapi::QLength dist, float speed, bool slew = false);
 
 /**
  * @class Auton_Functions
@@ -143,6 +143,11 @@ class Auton_Functions{
              * @brief Executes the autonomous routine for middle rings rush on Red side
              */
             void ringRush();
+
+            /**
+             * @brief Executes the autonomous routine for the center goal on Red side
+             */
+            void centerGS();
         private:
             /**
              * @brief A reference to the parent Auton_Functions object.
@@ -160,9 +165,9 @@ class Auton_Functions{
      * strategies specific to the BLUE alliance during the 
      * autonomous phase
      */
-    struct BLUE_Auton {
+    struct BLUE_Auton : private RED_Auton {
             // Assign parameter value to member variable
-            BLUE_Auton(Auton_Functions& parent) : parent(parent){}
+            BLUE_Auton(Auton_Functions& parent) : RED_Auton(parent){}
             ~BLUE_Auton(){} // Destructor so that C++ can delete object
 
             /**
@@ -174,14 +179,11 @@ class Auton_Functions{
              * @brief Executes the autonomous routine for middle rings rush on Blue side
              */
             void ringRush();
-        private:
+
             /**
-             * @brief A reference to the parent Auton_Functions object.
-             * 
-             * This member variable is used to access the functionalities
-             * provided by the parent Auton_Functions instance.
+             * @brief Executes the autonomous routine for the center goal on Blue side
              */
-            Auton_Functions& parent;
+            void centerGS();
     };
   
   /**
@@ -192,4 +194,7 @@ class Auton_Functions{
       static teamColor select; // Static variable representing the team color that was selected
       static teamColor oldColor; // Static placeholder variable representing the team color that was selected
       static float intakeVelocity; // Static variable representing the velocity of the intake mechanism
+      void firstHalf_Corners(); // Function for the first half of the corner
+      void getCornerRings(okapi::QLength dist, float speed, bool slew = false);
+      void useDoinker(); // Function for using the doinker with mirrored auton
 };
