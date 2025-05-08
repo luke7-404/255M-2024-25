@@ -49,331 +49,6 @@ void default_constants() {
   chassis.pid_angle_behavior_set(ez::shortest);  // Changes the default behavior for turning, this defaults it to the shortest path there
 }
 
-///
-// Drive Example
-///
-void drive_example() {
-  // The first parameter is target inches
-  // The second parameter is max speed the robot will drive at
-  // The third parameter is a boolean (true or false) for enabling/disabling a slew at the start of drive motions
-  // for slew, only enable it when the drive distance is greater than the slew distance + a few inches
-
-  chassis.pid_drive_set(24_in, DRIVE_SPEED, true);
-  chassis.pid_wait();
-
-  chassis.pid_drive_set(-12_in, DRIVE_SPEED);
-  chassis.pid_wait();
-
-  chassis.pid_drive_set(-12_in, DRIVE_SPEED);
-  chassis.pid_wait();
-}
-
-///
-// Turn Example
-///
-void turn_example() {
-  // The first parameter is the target in degrees
-  // The second parameter is max speed the robot will drive at
-
-  chassis.pid_turn_set(90_deg, TURN_SPEED);
-  chassis.pid_wait();
-
-  chassis.pid_turn_set(45_deg, TURN_SPEED);
-  chassis.pid_wait();
-
-  chassis.pid_turn_set(0_deg, TURN_SPEED);
-  chassis.pid_wait();
-}
-
-///
-// Combining Turn + Drive
-///
-void drive_and_turn() {
-  chassis.pid_drive_set(24_in, DRIVE_SPEED, true);
-  chassis.pid_wait();
-
-  chassis.pid_turn_set(45_deg, TURN_SPEED);
-  chassis.pid_wait();
-
-  chassis.pid_turn_set(-45_deg, TURN_SPEED);
-  chassis.pid_wait();
-
-  chassis.pid_turn_set(0_deg, TURN_SPEED);
-  chassis.pid_wait();
-
-  chassis.pid_drive_set(-24_in, DRIVE_SPEED, true);
-  chassis.pid_wait();
-}
-
-///
-// Wait Until and Changing Max Speed
-///
-void wait_until_change_speed() {
-  // pid_wait_until will wait until the robot gets to a desired position
-
-  // When the robot gets to 6 inches slowly, the robot will travel the remaining distance at full speed
-  chassis.pid_drive_set(48_in, 30, true);
-  chassis.pid_wait_until(24_in);
-  chassis.pid_speed_max_set(DRIVE_SPEED);  // After driving 6 inches at 30 speed, the robot will go the remaining distance at DRIVE_SPEED
-  chassis.pid_wait();
-
-  chassis.pid_turn_set(45_deg, TURN_SPEED);
-  chassis.pid_wait();
-
-  chassis.pid_turn_set(-45_deg, TURN_SPEED);
-  chassis.pid_wait();
-
-  chassis.pid_turn_set(0_deg, TURN_SPEED);
-  chassis.pid_wait();
-
-  // When the robot gets to -6 inches slowly, the robot will travel the remaining distance at full speed
-  chassis.pid_drive_set(-24_in, 30, true);
-  chassis.pid_wait_until(-6_in);
-  chassis.pid_speed_max_set(DRIVE_SPEED);  // After driving 6 inches at 30 speed, the robot will go the remaining distance at DRIVE_SPEED
-  chassis.pid_wait();
-}
-
-///
-// Swing Example
-///
-void swing_example() {
-  // The first parameter is ez::LEFT_SWING or ez::RIGHT_SWING
-  // The second parameter is the target in degrees
-  // The third parameter is the speed of the moving side of the drive
-  // The fourth parameter is the speed of the still side of the drive, this allows for wider arcs
-
-  chassis.pid_swing_set(ez::LEFT_SWING, 90_deg, SWING_SPEED, 45);
-  chassis.pid_wait();
-
-  chassis.pid_swing_set(ez::RIGHT_SWING, 0_deg, SWING_SPEED, 45);
-  chassis.pid_wait();
-
-  chassis.pid_swing_set(ez::RIGHT_SWING, 90_deg, SWING_SPEED, 45);
-  chassis.pid_wait();
-
-  chassis.pid_swing_set(ez::LEFT_SWING, 0_deg, SWING_SPEED, 45);
-  chassis.pid_wait();
-}
-
-///
-// Motion Chaining
-///
-void motion_chaining() {
-  // Motion chaining is where motions all try to blend together instead of individual movements.
-  // This works by exiting while the robot is still moving a little bit.
-  // To use this, replace pid_wait with pid_wait_quick_chain.
-  chassis.pid_drive_set(24_in, DRIVE_SPEED, true);
-  chassis.pid_wait();
-
-  chassis.pid_turn_set(45_deg, TURN_SPEED);
-  chassis.pid_wait_quick_chain();
-
-  chassis.pid_turn_set(-45_deg, TURN_SPEED);
-  chassis.pid_wait_quick_chain();
-
-  chassis.pid_turn_set(0_deg, TURN_SPEED);
-  chassis.pid_wait();
-
-  // Your final motion should still be a normal pid_wait
-  chassis.pid_drive_set(-24_in, DRIVE_SPEED, true);
-  chassis.pid_wait();
-}
-
-///
-// Auto that tests everything
-///
-void combining_movements() {
-  chassis.pid_drive_set(24_in, DRIVE_SPEED, true);
-  chassis.pid_wait();
-
-  chassis.pid_turn_set(45_deg, TURN_SPEED);
-  chassis.pid_wait();
-
-  chassis.pid_swing_set(ez::RIGHT_SWING, -45_deg, SWING_SPEED, 45);
-  chassis.pid_wait();
-
-  chassis.pid_turn_set(0_deg, TURN_SPEED);
-  chassis.pid_wait();
-
-  chassis.pid_drive_set(-24_in, DRIVE_SPEED, true);
-  chassis.pid_wait();
-}
-
-///
-// Interference example
-///
-void tug(int attempts) {
-  for (int i = 0; i < attempts - 1; i++) {
-    // Attempt to drive backward
-    printf("i - %i", i);
-    chassis.pid_drive_set(-12_in, 127);
-    chassis.pid_wait();
-
-    // If failsafed...
-    if (chassis.interfered) {
-      chassis.drive_sensor_reset();
-      chassis.pid_drive_set(-2_in, 20);
-      pros::delay(1000);
-    }
-    // If the robot successfully drove back, return
-    else {
-      return;
-    }
-  }
-}
-
-// If there is no interference, the robot will drive forward and turn 90 degrees.
-// If interfered, the robot will drive forward and then attempt to drive backward.
-void interfered_example() {
-  chassis.pid_drive_set(24_in, DRIVE_SPEED, true);
-  chassis.pid_wait();
-
-  if (chassis.interfered) {
-    tug(3);
-    return;
-  }
-
-  chassis.pid_turn_set(90_deg, TURN_SPEED);
-  chassis.pid_wait();
-}
-
-///
-// Odom Drive PID
-///
-void odom_drive_example() {
-  // This works the same as pid_drive_set, but it uses odom instead!
-  // You can replace pid_drive_set with pid_odom_set and your robot will
-  // have better error correction.
-
-  chassis.pid_odom_set(24_in, DRIVE_SPEED, true);
-  chassis.pid_wait();
-
-  chassis.pid_odom_set(-12_in, DRIVE_SPEED);
-  chassis.pid_wait();
-
-  chassis.pid_odom_set(-12_in, DRIVE_SPEED);
-  chassis.pid_wait();
-}
-
-///
-// Odom Pure Pursuit
-///
-void odom_pure_pursuit_example() {
-  // Drive to 0, 30 and pass through 6, 10 and 0, 20 on the way, with slew
-  chassis.pid_odom_set({{{6_in, 10_in}, fwd, DRIVE_SPEED},
-                        {{0_in, 20_in}, fwd, DRIVE_SPEED},
-                        {{0_in, 30_in}, fwd, DRIVE_SPEED}},
-                       true);
-  chassis.pid_wait();
-
-  // Drive to 0, 0 backwards
-  chassis.pid_odom_set({{0_in, 0_in}, rev, DRIVE_SPEED},
-                       true);
-  chassis.pid_wait();
-}
-
-///
-// Odom Pure Pursuit Wait Until
-///
-void odom_pure_pursuit_wait_until_example() {
-  chassis.pid_odom_set({{{0_in, 24_in}, fwd, DRIVE_SPEED},
-                        {{12_in, 24_in}, fwd, DRIVE_SPEED},
-                        {{24_in, 24_in}, fwd, DRIVE_SPEED}},
-                       true);
-  chassis.pid_wait_until_index(1);  // Waits until the robot passes 12, 24
-  // Intake.move(127);  // Set your intake to start moving once it passes through the second point in the index
-  chassis.pid_wait();
-  // Intake.move(0);  // Turn the intake off
-}
-
-///
-// Odom Boomerang
-///
-void odom_boomerang_example() {
-  chassis.pid_odom_set({{0_in, 24_in, 45_deg}, fwd, DRIVE_SPEED},
-                       true);
-  chassis.pid_wait();
-
-  chassis.pid_odom_set({{0_in, 0_in, 0_deg}, rev, DRIVE_SPEED},
-                       true);
-  chassis.pid_wait();
-}
-
-///
-// Odom Boomerang Injected Pure Pursuit
-///
-void odom_boomerang_injected_pure_pursuit_example() {
-  chassis.pid_odom_set({{{0_in, 24_in, 45_deg}, fwd, DRIVE_SPEED},
-                        {{12_in, 24_in}, fwd, DRIVE_SPEED},
-                        {{24_in, 24_in}, fwd, DRIVE_SPEED}},
-                       true);
-  chassis.pid_wait();
-
-  chassis.pid_odom_set({{0_in, 0_in, 0_deg}, rev, DRIVE_SPEED},
-                       true);
-  chassis.pid_wait();
-}
-
-///
-// Calculate the offsets of your tracking wheels
-///
-void measure_offsets() {
-  // Number of times to test
-  int iterations = 10;
-
-  // Our final offsets
-  double l_offset = 0.0, r_offset = 0.0, b_offset = 0.0, f_offset = 0.0;
-
-  // Reset all trackers if they exist
-  if (chassis.odom_tracker_left != nullptr) chassis.odom_tracker_left->reset();
-  if (chassis.odom_tracker_right != nullptr) chassis.odom_tracker_right->reset();
-  if (chassis.odom_tracker_back != nullptr) chassis.odom_tracker_back->reset();
-  if (chassis.odom_tracker_front != nullptr) chassis.odom_tracker_front->reset();
-  
-  for (int i = 0; i < iterations; i++) {
-    // Reset pid targets and get ready for running an auton
-    chassis.pid_targets_reset();
-    chassis.drive_imu_reset();
-    chassis.drive_sensor_reset();
-    chassis.drive_brake_set(MOTOR_BRAKE_HOLD);
-    chassis.odom_xyt_set(0_in, 0_in, 0_deg);
-    double imu_start = chassis.odom_theta_get();
-    double target = i % 2 == 0 ? 90 : 270;  // Switch the turn target every run from 270 to 90
-
-    // Turn to target at half power
-    chassis.pid_turn_set(target, 63, ez::raw);
-    chassis.pid_wait();
-    pros::delay(250);
-
-    // Calculate delta in angle
-    double t_delta = util::to_rad(fabs(util::wrap_angle(chassis.odom_theta_get() - imu_start)));
-
-    // Calculate delta in sensor values that exist
-    double l_delta = chassis.odom_tracker_left != nullptr ? chassis.odom_tracker_left->get() : 0.0;
-    double r_delta = chassis.odom_tracker_right != nullptr ? chassis.odom_tracker_right->get() : 0.0;
-    double b_delta = chassis.odom_tracker_back != nullptr ? chassis.odom_tracker_back->get() : 0.0;
-    double f_delta = chassis.odom_tracker_front != nullptr ? chassis.odom_tracker_front->get() : 0.0;
-
-    // Calculate the radius that the robot traveled
-    l_offset += l_delta / t_delta;
-    r_offset += r_delta / t_delta;
-    b_offset += b_delta / t_delta;
-    f_offset += f_delta / t_delta;
-  }
-
-  // Average all offsets
-  l_offset /= iterations;
-  r_offset /= iterations;
-  b_offset /= iterations;
-  f_offset /= iterations;
-
-  // Set new offsets to trackers that exist
-  if (chassis.odom_tracker_left != nullptr) chassis.odom_tracker_left->distance_to_center_set(l_offset);
-  if (chassis.odom_tracker_right != nullptr) chassis.odom_tracker_right->distance_to_center_set(r_offset);
-  if (chassis.odom_tracker_back != nullptr) chassis.odom_tracker_back->distance_to_center_set(b_offset);
-  if (chassis.odom_tracker_front != nullptr) chassis.odom_tracker_front->distance_to_center_set(f_offset);
-}
-
 // . . .
 // Make your own autonomous functions here!
 // . . .
@@ -449,6 +124,7 @@ void Auton_Functions::autoChecks() {
       this->release = CLOSE;
     }
 
+    // If team color is red, and detected color is blue: disable driver input and jostle intake, then enable driver
     if(this->select == teamColor::ALLIANCE_RED){
       if(colorSensor.get_hue() <= 254 && colorSensor.get_hue() >= 217){
         detectedColor = true;
@@ -459,7 +135,9 @@ void Auton_Functions::autoChecks() {
         intake.move(this->intakeVelocity);
           
       } else detectedColor = false;
-    } else if(this->select == teamColor::ALLIANCE_BLUE){
+    } 
+    // If team color is blue, and detected color is red: disable driver input and jostle intake, then enable driver
+    else if(this->select == teamColor::ALLIANCE_BLUE){
       if(colorSensor.get_hue() <= 18 && colorSensor.get_hue() >= 0){
         detectedColor = true;
         
@@ -476,6 +154,11 @@ void Auton_Functions::autoChecks() {
   }
 }
 
+/**
+ * @brief general function that toggles the doinker's state of extended ot retracted
+ * 
+ * @param doinker pneumatics object
+ */
 void flipDoinker(pros::adi::Pneumatics& doinker) {
   if (doinker.is_extended()) {
     doinker.retract();
@@ -483,6 +166,11 @@ void flipDoinker(pros::adi::Pneumatics& doinker) {
     doinker.extend();
   }
 }
+
+/**
+ * @brief Depending on if we are left side or right side, we make sure to use the correct doinker.
+ *        If the axis is flipped then we want to toggle the right doinker, otherwise we want the left
+ */
 void Auton_Functions::useDoinker(){
   if(chassis.odom_theta_direction_get()){
     flipDoinker(rightDoinker);
@@ -491,8 +179,16 @@ void Auton_Functions::useDoinker(){
   }
 }
 
+/**
+ * @brief General routine that will grab both of the desired colored rings in the corner
+ * 
+ * @param dist entry distance - distance from the robot to the corner
+ * @param speed entry speed - the speed used initially to move into the corner
+ * @param slew a boolean to let the robot accelerate up to speed over time
+ */
 void Auton_Functions::getCornerRings(okapi::QLength dist, float speed, bool slew){
   chassis.pid_drive_set(dist, speed, slew);
+  intake.move(127);
   chassis.pid_wait_quick();
   chassis.pid_drive_set(-6_in, 40, true);
   chassis.pid_wait_quick();
@@ -506,6 +202,9 @@ void Auton_Functions::getCornerRings(okapi::QLength dist, float speed, bool slew
   chassis.pid_wait_quick();
 }
 
+/**
+ * @brief Base function for win point auton (used for the left side of the field)
+ */
 void Auton_Functions::AWP1(){
   stage = 2;
   delay(1000);
@@ -534,12 +233,17 @@ void Auton_Functions::AWP1(){
   chassis.pid_wait();
 }
 
+/**
+ * @brief mirrored function for win point auton (used for the right side of the field)
+ */
 void Auton_Functions::AWP2(){
   chassis.odom_theta_flip();
   AWP1();
 }
 
-
+/**
+ * @brief function for Skills auton
+ */
 void Auton_Functions::Skills(){
   // Wall Stake
   stage = 2;
@@ -550,44 +254,80 @@ void Auton_Functions::Skills(){
   stage = 3;
   chassis.pid_turn_set(-90_deg, TURN_SPEED);
   chassis.pid_wait();
-
-
   //First Corner
   this->firstHalf_Corners();
+  
+  // Move to reflection point
   chassis.pid_wait();
-  chassis.pid_swing_set(ez::LEFT_SWING,-95_deg,120,-15);
-  chassis.pid_drive_set(3.25_in, 100, true); //aligns itself
+  chassis.pid_drive_set(8.5_in, 100, true); //aligns itself
+  delay(500);
+  chassis.pid_swing_set(ez::LEFT_SWING,-89_deg,100,-15);
   delay(100);
   intake.brake();
-  chassis.pid_drive_set(55_in, DRIVE_SPEED,true);//drive to orgin
+  chassis.pid_drive_set(61.5_in, DRIVE_SPEED,true);//drive to orgin
+  chassis.pid_wait();
+  chassis.pid_turn_set(87_deg, TURN_SPEED);
+  chassis.pid_wait();
+  
+  /*chassis.pid_targets_reset();                // Resets PID targets to 0
+  chassis.odom_xy_set(0.2_in, -7.26_in);    // Set the current position, you can start at a specific position with this
+  */
+ chassis.drive_sensor_reset();               // Reset drive sensors to 0
+ //Second Corner
+  
+  chassis.odom_theta_flip();
+  this->firstHalf_Corners();
+
+  //TODO: Finished with first half of the field, now we need to do the second half
+  chassis.pid_wait();
+  chassis.pid_turn_set(-120_deg, TURN_SPEED); 
+  chassis.pid_wait();
+  chassis.pid_drive_set(58.25_in, 100, true); //moves to ring inside ladder
+  chassis.pid_wait();
+  chassis.pid_drive_set(24_in, 100, true); //moves to ring outside ladder
+  chassis.pid_wait();
+  chassis.pid_turn_set(-83_deg, TURN_SPEED); //turns to face mobile goal
+  chassis.pid_wait();
+  chassis.pid_drive_set(16_in, 100,true);
+  chassis.pid_wait();
+  chassis.pid_drive_set(60.25_in,70,true);//moves to the 3 rings
+  chassis.pid_wait();
+  chassis.pid_drive_set(-14.5_in,70,true);//backs up into last ring
   chassis.pid_wait();
   chassis.pid_turn_set(90_deg, TURN_SPEED);
   chassis.pid_wait();
-
-  /*chassis.pid_drive_set(9_in, DRIVE_SPEED,true);
+  chassis.pid_drive_set(11_in, 90, true); //moves to the last ring
+  chassis.pid_wait();
+  chassis.pid_swing_set(ez::LEFT_SWING,-170_deg,100,-40);
+  chassis.pid_wait();
+  chassis.pid_drive_set(-28_in, 63, true); //moves to corner
   delay(500);
-  chassis.pid_turn_set(-90_deg, TURN_SPEED); //turn to second mobile goal
+  this->setClawState(OPEN);
+  delay(300);
+  chassis.pid_drive_set(2.5_in, 63, true);
   delay(800);
-  chassis.pid_drive_set(56_in, DRIVE_SPEED,true); //drive to orgin
+  chassis.pid_turn_set(-89_deg,70,true);
   chassis.pid_wait();
-  chassis.pid_turn_set(75_deg, TURN_SPEED);
+  chassis.pid_drive_set(61.5_in, 63, true);
   chassis.pid_wait();
-*/
-  // Move to reflection point
-  
-
-  //Second Corner
-  chassis.odom_theta_flip();
-  this->firstHalf_Corners();
-  //TODO: Finished with first half of the field, now we need to do the second half
+  chassis.pid_turn_set(89_deg,70,true);
+  chassis.pid_wait();
+  chassis.pid_drive_set(61.5_in, 63, true);
   chassis.pid_wait();
 }
 
+/**
+ * @brief General macro that will put a ring on a wallstake
+ * 
+ * @param dist entry distance - distance from the robot to the corner
+ * @param speed entry speed - the speed used initially to move into the corner
+ * @param slew a boolean to let the robot accelerate up to speed over time
+ */
 void wallStakeFunc(okapi::QLength dist, float speed, bool slew){
-  if(dist == 0_in){
+  if(dist == 0_in){ // used for driver skills
     dist = 13_in;
     speed = 227;
-  } else {
+  } else { // used for program skills
     chassis.pid_drive_set(dist, speed, slew);
     chassis.pid_wait_quick();
   }
@@ -596,11 +336,14 @@ void wallStakeFunc(okapi::QLength dist, float speed, bool slew){
   SecondStageIntake.move_relative(-100, -15);
   delay(300);
   stage = 2;
-  delay(700);
+  delay(600);
   chassis.pid_drive_set(3_in - dist, fabs(100-speed), true);
   chassis.pid_wait_quick();
 }
 
+/**
+ * @brief general function that will get 6 rings on a goal in the corner and one wall stake (used so we can mirror)
+ */
 void Auton_Functions::firstHalf_Corners(){
   this->setClawState(AUTO);
   chassis.pid_drive_set(-22.1_in ,DRIVE_SPEED,true);//to mobile goal
@@ -616,15 +359,15 @@ void Auton_Functions::firstHalf_Corners(){
   chassis.pid_wait();
   chassis.pid_drive_set(51.5_in, 100,true); //goes to second ring
   chassis.pid_wait();
+  delay(500);
+  chassis.pid_turn_set(-1, TURN_SPEED); // 0's out
   delay(300);
-  chassis.pid_turn_set(0, TURN_SPEED); // 0's out
-  delay(300);
+  chassis.pid_drive_set(20.65_in,90,true); // moves to third ring
   stage = 1; //gets ready for third ring
-  chassis.pid_drive_set(20.75_in,90,true); // moves to third ring
   chassis.pid_wait();
   intake.move(127);
   chassis.pid_swing_set(ez::LEFT_SWING,90_deg,100,-40);//swing manuever
-  chassis.pid_turn_set(87.5_deg, TURN_SPEED); //turns to face wall stake
+  chassis.pid_turn_set(86.25_deg, TURN_SPEED); //turns to face wall stake
 
   chassis.pid_wait();
 
@@ -632,14 +375,14 @@ void Auton_Functions::firstHalf_Corners(){
   chassis.pid_wait();
   stage = 3;
   chassis.pid_wait();
-  chassis.pid_drive_set(-1.8_in,DRIVE_SPEED);//backs up from wall stake
+  chassis.pid_drive_set(-1.7_in,DRIVE_SPEED);//backs up from wall stake
   chassis.pid_wait();
   //chassis.pid_turn_set(0, TURN_SPEED); //faces toward 3 rings
-  chassis.pid_turn_set(5_deg, TURN_SPEED); //corrects angle
+  chassis.pid_turn_set(4_deg, TURN_SPEED); //corrects angle
   chassis.pid_wait();
   intake.move(127);
   chassis.pid_wait();
-  chassis.pid_drive_set(60.25_in,100,true);//moves to the 3 rings
+  chassis.pid_drive_set(60.25_in,70,true);//moves to the 3 rings
   chassis.pid_wait();
   chassis.pid_drive_set(-14.5_in,70,true);//backs up into last ring
   chassis.pid_wait();
@@ -647,9 +390,9 @@ void Auton_Functions::firstHalf_Corners(){
   chassis.pid_wait();
   chassis.pid_drive_set(11_in, 90, true); //moves to the last ring
   chassis.pid_wait();
-  chassis.pid_swing_set(ez::LEFT_SWING,-160_deg,100,-40);
+  chassis.pid_swing_set(ez::LEFT_SWING,-170_deg,100,-40);
   chassis.pid_wait();
-  chassis.pid_drive_set(-28_in, DRIVE_SPEED, true); //moves to corner
+  chassis.pid_drive_set(-28_in, 63, true); //moves to corner
   delay(600);
   this->setClawState(OPEN);
   delay(300);
@@ -668,7 +411,10 @@ void Auton_Functions::firstHalf_Corners(){
 
 }
 
-
+/**
+ * @brief base function for goal rush (we didn't complete it)
+ * 
+ */
 void Auton_Functions::RED_Auton::goalRush(){
   chassis.drive_brake_set(E_MOTOR_BRAKE_COAST);
   parent.useDoinker(); // Extend the left doinker
@@ -705,11 +451,15 @@ void Auton_Functions::RED_Auton::goalRush(){
   chassis.pid_wait();*/
 }
 
+/**
+ * @brief base function for ring rush (best auton we've had)
+ * 
+ */
 void Auton_Functions::RED_Auton::ringRush(){
   //Start on line at a -22.7 deg angle
   parent.useDoinker();
-  chassis.pid_drive_set(40, 127, true);
   firstStageIntake.move(127);
+  chassis.pid_drive_set(40, 127, true);
   delay(1000);
 
   // check angle
@@ -719,7 +469,7 @@ void Auton_Functions::RED_Auton::ringRush(){
   chassis.pid_drive_set(-25, 127, true);
   
   // check angle
-  delay(300);
+  delay(500);
   parent.useDoinker();
   delay(1000);
   chassis.pid_swing_set(ez::RIGHT_SWING, -71.5_deg, 100, -50);
@@ -729,7 +479,7 @@ void Auton_Functions::RED_Auton::ringRush(){
   chassis.pid_wait_quick();
   chassis.pid_swing_set(ez::RIGHT_SWING, -140_deg, 100, -50);
   chassis.pid_wait_quick();
-
+  
   
   // add end of awp for corner rings
   parent.getCornerRings(40_in, 90, true); // go to corner rings
@@ -739,16 +489,21 @@ void Auton_Functions::RED_Auton::ringRush(){
   chassis.pid_wait_quick();
   chassis.pid_drive_set(25, 127, true);
   chassis.pid_wait_quick();
+
 }
+
+/**
+ * @brief These are functions that we never got to develop/ mirror 
+ */
+
 
 void Auton_Functions::RED_Auton::centerGS(){}
-
-
 void Auton_Functions::BLUE_Auton::centerGS(){}
-void Auton_Functions::BLUE_Auton::goalRush(){
-  
-}
+void Auton_Functions::BLUE_Auton::goalRush(){}
 
+/**
+ * @brief mirrored function for ring rush
+ */
 void Auton_Functions::BLUE_Auton::ringRush(){
   chassis.odom_theta_flip();
   

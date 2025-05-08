@@ -2,24 +2,7 @@
 
 void default_constants();
 
-void drive_example();
-void turn_example();
-void drive_and_turn();
-void wait_until_change_speed();
-void swing_example();
-void motion_chaining();
-void combining_movements();
-void interfered_example();
-void odom_drive_example();
-void odom_pure_pursuit_example();
-void odom_pure_pursuit_wait_until_example();
-void odom_boomerang_example();
-void odom_boomerang_injected_pure_pursuit_example();
-void measure_offsets();
-
-// NEW STUFF
-
-extern uint8_t stage; // The stage of the motion that LB is in (0 = at rest | 1 = ready for ring | 2 = in the air)
+extern uint8_t stage; // The stage of the motion that LB is in (0 / 3 = at rest | 1 = ready for ring | 2 = in the air)
 extern void ladyBrownRoutine(); // Function for the ladybrown task
 extern double targetAngle; // variable for setting the target angle of the ladybrown
 extern bool detectedColor; // variable for detecting the color of the ring
@@ -34,7 +17,7 @@ extern void wallStakeFunc(okapi::QLength dist, float speed, bool slew = false);
  * 
  * @brief This class provides autonomous functions for a robot, including control over
  *        various pneumatic components and motor groups. It supports different autonomous
- *        routines for both red and blue sides of the field, as well as skills challenges.
+ *        routines for both red and blue sides of the field, as well as skills.
  * 
  * @details The class manages the state of the robot's claw using an enum `clawState` and
  *          provides methods to set the claw state and perform automatic clamping. It also
@@ -77,10 +60,10 @@ class Auton_Functions{
     }
 
     /**
-     * @enum clawState
-     * @brief Represents the possible states of a robotic claw.
+     * @enum teamColor
+     * @brief Represents the possible states of our alliance/ color sort.
      * 
-     * This enumeration defines three states for controlling a robotic claw:
+     * This enumeration defines three states for controlling our color sort:
      * - ALLIANCE_RED: represented by the value 1.
      * - ALLIANCE_BLUE: represented by the value -1.
      * - DISABLED: represented by the value 0.

@@ -57,15 +57,6 @@ void initialize() {
 
   pros::delay(500);  // Stop the user from doing anything while legacy ports configure
 
-  // Look at your horizontal tracking wheel and decide if it's in front of the midline of your robot or behind it
-  //  - change `back` to `front` if the tracking wheel is in front of the midline
-  //  - ignore this if you aren't using a horizontal tracker
-  // chassis.odom_tracker_back_set(&horiz_tracker);
-  // Look at your vertical tracking wheel and decide if it's to the left or right of the center of the robot
-  //  - change `left` to `right` if the tracking wheel is to the right of the centerline
-  //  - ignore this if you aren't using a vertical tracker
-  // chassis.odom_tracker_left_set(&vert_tracker);
-
   // Configure your chassis controls
   chassis.opcontrol_curve_buttons_toggle(true);   // Enables modifying the controller curve with buttons on the joysticks
   chassis.opcontrol_drive_activebrake_set(0.25);   // Sets the active brake kP. We recommend ~2.  0 will disable.
@@ -73,10 +64,6 @@ void initialize() {
 
   // Set the drive to your own constants from autons.cpp!
   default_constants();
-
-  // These are already defaulted to these buttons, but you can change the left/right curve buttons here!
-  // chassis.opcontrol_curve_buttons_left_set(pros::E_CONTROLLER_DIGITAL_LEFT, pros::E_CONTROLLER_DIGITAL_RIGHT);  // If using tank, only the left side is used.
-  // chassis.opcontrol_curve_buttons_right_set(pros::E_CONTROLLER_DIGITAL_Y, pros::E_CONTROLLER_DIGITAL_A);
 
 
   // Initialize chassis and auton selector
@@ -93,28 +80,6 @@ void initialize() {
   // start tasks 
   menu.init();
   pros::Task printGUI(printMenu);
-}
-
-/**
- * Runs while the robot is in the disabled state of Field Management System or
- * the VEX Competition Switch, following either autonomous or opcontrol. When
- * the robot is enabled, this task will exit.
- */
-void disabled() {
-  // . . .
-}
-
-/**
- * Runs after initialize(), and before autonomous when connected to the Field
- * Management System or the VEX Competition Switch. This is intended for
- * competition-specific initialization routines, such as an autonomous selector
- * on the LCD.
- *
- * This task will exit when the robot is enabled and autonomous or opcontrol
- * starts.
- */
-void competition_initialize() {
-  // . . .
 }
 
 /**
@@ -135,26 +100,11 @@ void autonomous() {
   chassis.odom_xyt_set(0_in, 0_in, 0_deg);    // Set the current position, you can start at a specific position with this
   chassis.drive_brake_set(MOTOR_BRAKE_HOLD);  // Set motors to hold.  This helps autonomous consistency
 
-  /*
-  Odometry and Pure Pursuit are not magic
-
-  It is possible to get perfectly consistent results without tracking wheels,
-  but it is also possible to have extremely inconsistent results without tracking wheels.
-  When you don't use tracking wheels, you need to:
-   - avoid wheel slip
-   - avoid wheelies
-   - avoid throwing momentum around (super harsh turns, like in the example below)
-  You can do cool curved motions, but you have to give your robot the best chance
-  to be consistent
-  */
-
   // Make Blue and Red autonomous objects
   Auton_Functions::BLUE_Auton Blue(autonFunc);
   Auton_Functions::RED_Auton Red(autonFunc);
-  // delay(2000);  
 
-  autonID = 'A';
-  float x = 45.0; // Set the initial position of the lady brown sensor to 0.0
+  float x = 44.0; // Set the initial position of the lady brown sensor
 
   // Switch conditional statement to choose from any of the 9 scenarios
   switch (autonID){
@@ -163,7 +113,7 @@ void autonomous() {
     case '1': // Flow through design because regardless if it is blue or red, the process is the same
     case 'A':
         setLB_Sensor(x); 
-        stage = 1;
+        stage = 3;
         autonFunc.setTeamColor(Auton_Functions::ALLIANCE_RED); 
         autonFunc.Skills();
         Blue.~BLUE_Auton(); // Since it is a general function destroy objects
@@ -251,7 +201,6 @@ void autonomous() {
   }
 
 }
-
 
 /**
  * Gives you some extras to run in your opcontrol:
